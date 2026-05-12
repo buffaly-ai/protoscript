@@ -97,6 +97,6 @@ See [`LICENSE`](LICENSE).
 
 ## 🏥 Need help?
 We deploy explainable, neurosymbolic systems in regulated domains (healthcare and beyond).
-If you'd like guidance or custom development, email **support@intelligencefactory.ai** or visit **https://intelligencefactory.ai**.
+For Buffaly guidance, source access, plugin development, or partner integration, visit **https://buffa.ly** or open an issue in the appropriate Buffaly repository.
 
 *© 2026 Matt Furnari*
