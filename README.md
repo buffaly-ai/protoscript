@@ -100,3 +100,11 @@ We deploy explainable, neurosymbolic systems in regulated domains (healthcare an
 For Buffaly guidance, source access, plugin development, or partner integration, visit **https://buffa.ly** or open an issue in the appropriate Buffaly repository.
 
 *© 2026 Matt Furnari*
+## Licensing
+
+Buffaly core is GPLv3 by default. If your organization needs different terms for proprietary use, redistribution, or supported deployment, contact us for commercial licensing.
+
+Buffaly is developed by Matt Furnari.
+
+See [LICENSING.md](LICENSING.md) and [CONTRIBUTING.md](CONTRIBUTING.md).
+
