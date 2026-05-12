@@ -99,4 +99,4 @@ See [`LICENSE`](LICENSE).
 We deploy explainable, neurosymbolic systems in regulated domains (healthcare and beyond).
 If you'd like guidance or custom development, email **support@intelligencefactory.ai** or visit **https://intelligencefactory.ai**.
 
-*© 2026 Intelligence Factory, LLC*
+*© 2026 Matt Furnari*
