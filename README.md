@@ -1,105 +1,61 @@
-# ProtoScript.Core
-*A full programming language for prototypes, rules, and executable ontologies*
+# ProtoScript
 
-> **Buffaly** is a neurosymbolic platform for building large, explainable knowledge graphs and running language-aware inference over them.
-> It is powered by **Ontology** (a prototype graph runtime) and **ProtoScript** (an executable language for defining prototypes, rules, and functions).
+ProtoScript is the executable prototype language used by Buffaly to define prototype graphs, typed behavior, rules, functions, and runtime-editable agent/ontology behavior.
 
-This repository contains ProtoScript (parser/compiler/interpreter), the workbench API + editor, graph induction code, and ProtoScript tests.
+Buffaly is a field-tested runtime for high-trust agents, developed by Matt Furnari. This repository is part of the public `buffaly-ai` source release and is intended for inspection, debugging, plugin/tool development, partner integration, and LLM-assisted understanding.
 
-## Scope
-This repository is part of the open-source split of our platform.
-It does **not** include several commercial components (partner-only datasets, agentic tooling, and medical extensions).
+## How this fits into Buffaly
 
-## ✨ Key capabilities (ProtoScript)
-| Feature | Why it matters |
-|---|---|
-| 🧾 **Executable ontology definitions** | Define prototypes, fields, and functions in one concise file format. |
-| ⚙️ **Compiler + interpreter** | Parse, compile, and evaluate ProtoScript in-process. |
-| 🧰 **CLI tooling** | Validate parse/compile/runtime behavior from automation. |
-| 🧪 **Unit + integration tests** | ProtoScript tests live with ProtoScript (`ProtoScript.Tests*`). |
-| 🧑‍💻 **Workbench** | Standalone editor web app + API endpoints for compile/interpret/debug/symbol lookup. |
+ProtoScript sits under Buffaly's semantic runtime: ontology objects define graph shape, and ProtoScript makes parts of that graph executable and inspectable.
 
-## What This Repo Owns
-1. Language/runtime: `ProtoScript`, `ProtoScript.Parsers`, `ProtoScript.Interpretter`
-2. Tooling: `ProtoScript.CLI`, `ProtoScript.CLI.Validation`
-3. Workbench: `ProtoScript.Workbench.Api`, `ProtoScript.Workbench.Web`
-4. Tests: `ProtoScript.Tests`, `ProtoScript.Tests.Integration`
-5. Induction: `Ontology.GraphInduction` (present in repo; not currently included in `ProtoScript.sln`)
+## What is in this repository
 
-## Solution
-- `ProtoScript.sln`
+- Parser/compiler/interpreter projects
+- CLI and validation helpers
+- Workbench API/web projects
+- Tests and integration coverage
 
-Current solution membership:
-- `ProtoScript`
-- `ProtoScript.Parsers`
-- `ProtoScript.Interpretter`
-- `ProtoScript.CLI`
-- `ProtoScript.CLI.Validation`
-- `ProtoScript.Workbench.Api`
-- `ProtoScript.Workbench.Web`
-- `ProtoScript.Tests`
-- `ProtoScript.Tests.Integration`
+## Repository map
 
-## 📚 ProtoScript reference docs (jump links)
-The reference manual is split into focused sections under `docs/ProtoScript/`.
+- `Ontology.GraphInduction/Ontology.GraphInduction.csproj`
+- `ProtoScript.CLI.Validation/ProtoScript.CLI.Validation.csproj`
+- `ProtoScript.CLI/ProtoScript.CLI.csproj`
+- `ProtoScript.Interpretter/ProtoScript.Interpretter.csproj`
+- `ProtoScript.Parsers/ProtoScript.Parsers.csproj`
+- `ProtoScript.Tests.Integration/ProtoScript.Tests.Integration.csproj`
+- `ProtoScript.Tests/ProtoScript.Tests.csproj`
+- `ProtoScript.Workbench.Api/ProtoScript.Workbench.Api.csproj`
+- `ProtoScript.Workbench.Web/ProtoScript.Workbench.Web.csproj`
+- `ProtoScript/ProtoScript.csproj`
 
-- Index: [docs/ProtoScript/README.md](docs/ProtoScript/README.md)
-- Introduction: [docs/ProtoScript/introduction.md](docs/ProtoScript/introduction.md)
-- Ontology context: [docs/ProtoScript/ontology-context.md](docs/ProtoScript/ontology-context.md)
-- What are prototypes?: [docs/ProtoScript/what-are-prototypes.md](docs/ProtoScript/what-are-prototypes.md)
-- Syntax and features: [docs/ProtoScript/syntax-and-features.md](docs/ProtoScript/syntax-and-features.md)
-- Native value prototypes: [docs/ProtoScript/native-value-prototypes.md](docs/ProtoScript/native-value-prototypes.md)
-- Examples of prototype creation: [docs/ProtoScript/examples-of-prototype-creation.md](docs/ProtoScript/examples-of-prototype-creation.md)
-- Simpsons example: [docs/ProtoScript/simpsons-example.md](docs/ProtoScript/simpsons-example.md)
-- Relationships: [docs/ProtoScript/relationships.md](docs/ProtoScript/relationships.md)
-- Shadows and LGG: [docs/ProtoScript/shadows-and-lgg.md](docs/ProtoScript/shadows-and-lgg.md)
-- Prototype paths: [docs/ProtoScript/prototype-paths.md](docs/ProtoScript/prototype-paths.md)
-- Subtypes: [docs/ProtoScript/subtypes.md](docs/ProtoScript/subtypes.md)
-- Transformation functions: [docs/ProtoScript/transformation-functions.md](docs/ProtoScript/transformation-functions.md)
-- Ternary expression support spec: [docs/ProtoScript/ternary-expression-support-spec.md](docs/ProtoScript/ternary-expression-support-spec.md)
+## Build
 
-## 🚀 Build
-The split repos are designed to sit as **siblings** on disk so `Scripts\update_dlls.bat` can copy DLLs between `..\ontology-core`, `..\protoscript-core`, and `..\buffaly-nlu`.
-If you clone into different folder names, update the paths inside `Scripts\update_dlls.bat`.
-
-From repo root:
+This repository is source-visible first. The installer is still the recommended path for normal use, but the source is here so developers and partners can inspect behavior, debug integrations, and build plugins/tools.
 
 ```powershell
-Scripts\update_dlls.bat
-dotnet build ProtoScript.sln
+# From this repository root
+dotnet restore ProtoScript.sln
+dotnet build ProtoScript.sln --configuration Release
 ```
 
-## 🧪 Test
-From repo root:
+Some repositories include partner/closed support binaries under `lib/` so the public source can compile without immediately open-sourcing every historical dependency. More dependencies may be opened over time as time allows.
 
-```powershell
-dotnet test ProtoScript.Tests\ProtoScript.Tests.csproj
-dotnet test ProtoScript.Tests.Integration\ProtoScript.Tests.Integration.csproj --filter "TestCategory=Integration"
-```
+## Configuration and secrets
 
-Integration tests load sample project files from the Buffaly portal project directories in `Buffaly.NLU`.
+No credentials are required for normal parser/runtime development. Keep local workbench settings and generated artifacts out of commits.
 
-## 📦 Dependency model
-- Shared binaries are resolved from local `lib\` and `Deploy\`.
-- `Scripts\update_dlls.bat` refreshes DLLs from sibling split repos.
+If you add examples, keep them as placeholders. Never commit PHI, customer data, credentials, OAuth tokens, API keys, bearer tokens, connection strings with passwords, private browser state, or live run/session artifacts.
 
-## 📝 Release notes
-- [Release Notes (since split-repo move, through 2026-03-02)](docs/release-notes-2026-03-02-since-split-repo.md)
+## What is intentionally not included
 
-## Related repositories
-- Ontology core: https://github.com/Intelligence-Factory-LLC/Ontology.Core
-- ProtoScript core: https://github.com/Intelligence-Factory-LLC/ProtoScript.Core
-- Buffaly NLU: https://github.com/Intelligence-Factory-LLC/Buffaly.NLU
+Partner datasets, private domain packs, and deployment-specific runtime state are not part of this repo.
 
-## 🛡 License
-ProtoScript.Core is released under the **GNU General Public License v3.0**.
-See [`LICENSE`](LICENSE).
+Some domain packs, healthcare workflows, customer-specific connectors, deployment assets, implementation playbooks, sensitive demos/data, and private operational configuration remain separate from the public core.
 
-## 🏥 Need help?
-We deploy explainable, neurosymbolic systems in regulated domains (healthcare and beyond).
-For Buffaly guidance, source access, plugin development, or partner integration, visit **https://buffa.ly** or open an issue in the appropriate Buffaly repository.
+## Using this source
 
-*© 2026 Matt Furnari*
+The source is provided to make Buffaly inspectable and useful for builders who want to understand the runtime, debug integrations, or create plugins and tools. For most users, the installer/runtime package is the fastest path. If you are building proprietary products, redistributing Buffaly, or need supported deployment terms, use the commercial licensing route below.
+
 ## Licensing
 
 Buffaly core is GPLv3 by default. If your organization needs different terms for proprietary use, redistribution, or supported deployment, contact us for commercial licensing.
@@ -108,3 +64,10 @@ Buffaly is developed by Matt Furnari.
 
 See [LICENSING.md](LICENSING.md) and [CONTRIBUTING.md](CONTRIBUTING.md).
 
+## Commercial licensing
+
+Commercial licensing is available for organizations that need different terms for proprietary use, redistribution, private embedding, hosted product use, or supported deployment. Open a GitHub issue in this repository with the label `commercial-licensing` to start that discussion.
+
+## Contributions
+
+Major external code contributions are expected to require a Contributor License Agreement (CLA). Small documentation fixes, typo fixes, and issue reports may be handled without a CLA at the maintainer's discretion.
