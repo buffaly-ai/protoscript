@@ -1,0 +1,564 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+	<meta charset="utf-8">
+	<meta name="viewport" content="width=device-width, initial-scale=1">
+	<title>ProtoScript Workbench</title>
+	<link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.7/dist/css/bootstrap.min.css" rel="stylesheet">
+	<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.css">
+	<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.15/codemirror.min.css">
+	<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.15/theme/neat.min.css">
+	<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.15/addon/dialog/dialog.min.css">
+	<link rel="stylesheet" href="/js/plugins/codemirror/simple-hint.css">
+	<link rel="preconnect" href="https://fonts.googleapis.com">
+	<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+	<link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500&family=Source+Sans+3:wght@400;500;600;700&display=swap" rel="stylesheet">
+	<link rel="stylesheet" href="/custom_css/editor.css">
+	<link rel="stylesheet" href="/custom_css/protoscript-workbench.css">
+	<style>
+		:root {
+			--bg-main: #edf2f9;
+			--bg-accent: #dce8ff;
+			--surface: #ffffff;
+			--surface-soft: #f6f9ff;
+			--border: #d4ddeb;
+			--text: #1e2b3f;
+			--muted: #5a6a82;
+			--primary: #1f6feb;
+			--primary-soft: #dce9ff;
+			--shadow: 0 10px 28px rgba(21, 38, 67, 0.1);
+		}
+
+		html, body {
+			height: 100%;
+		}
+
+		body {
+			background:
+				radial-gradient(circle at 20% 0%, var(--bg-accent) 0%, transparent 40%),
+				linear-gradient(180deg, #f5f8fe 0%, var(--bg-main) 100%);
+			color: var(--text);
+			font-family: "Source Sans 3", "Segoe UI", Tahoma, Geneva, sans-serif;
+		}
+
+		.container-fluid {
+			padding: 9px !important;
+			gap: 6px;
+		}
+
+		header {
+			background: linear-gradient(135deg, #ffffff 0%, #f2f7ff 100%);
+			border: 1px solid var(--border);
+			border-radius: 14px;
+			padding: 8px 10px;
+			box-shadow: var(--shadow);
+		}
+
+		h1.h5 {
+			font-weight: 700;
+			letter-spacing: 0.01em;
+		}
+
+		#headerProjectName {
+			display: inline-block;
+			color: var(--muted) !important;
+			font-family: "IBM Plex Mono", Consolas, "Courier New", monospace;
+			font-size: 0.82rem;
+		}
+
+		.card {
+			border: 1px solid var(--border);
+			border-radius: 14px;
+			box-shadow: var(--shadow);
+			background: var(--surface);
+		}
+
+		.card-header {
+			background: var(--surface-soft);
+			border-bottom: 1px solid var(--border);
+		}
+
+		.CodeMirror {
+			height: 100%;
+			font-size: 14px;
+			border: 0;
+			background: #fcfdff;
+		}
+
+		.editor-shell {
+			height: calc(100vh - 168px);
+			min-height: 420px;
+		}
+
+		#rightPanel {
+			width: 348px;
+			min-width: 280px;
+		}
+
+		#outputResizer {
+			height: 6px;
+			cursor: ns-resize;
+			background: linear-gradient(90deg, #c9d5e8, #b9c8df, #c9d5e8);
+			border-radius: 99px;
+			margin: 0 4px;
+		}
+
+		#outputWindow {
+			height: 34vh;
+			min-height: 150px;
+		}
+
+		#txtResults2 {
+			background: #0f1724;
+			color: #dbe7ff;
+			font-family: "IBM Plex Mono", Consolas, "Courier New", monospace;
+			font-size: 12px;
+			line-height: 1.45;
+		}
+
+		#txtImmediate {
+			font-family: "IBM Plex Mono", Consolas, "Courier New", monospace;
+			font-size: 0.9rem;
+			resize: vertical;
+			min-height: 52px;
+		}
+
+		#runImmediateCmdBtn {
+			min-width: 88px;
+		}
+
+		.tab-content {
+			display: none;
+		}
+
+		.tab-content.active {
+			display: block;
+		}
+
+		.right-tab-content.active,
+		.bottom-tab-content.active {
+			display: flex;
+		}
+
+		.tab-button {
+			font-weight: 600;
+			color: #3f516d;
+			transition: all 0.15s ease;
+		}
+
+		.tab-button:hover {
+			color: var(--primary);
+			background: #f1f6ff;
+		}
+
+		.tab-button.active {
+			color: var(--primary);
+			background: #eef4ff !important;
+			border-bottom: 2px solid var(--primary);
+		}
+
+		.file-item,
+		.symbol-item,
+		.history-item,
+		.solution-entry {
+			display: flex;
+			align-items: center;
+			gap: 8px;
+			padding: 7px 10px;
+			border-radius: 9px;
+			cursor: pointer;
+			transition: background-color 0.14s ease, color 0.14s ease;
+		}
+
+		.file-item,
+		.solution-entry {
+			font-family: "IBM Plex Mono", Consolas, "Courier New", monospace;
+			font-size: 0.8rem;
+			word-break: break-word;
+		}
+
+		.history-item {
+			font-family: "IBM Plex Mono", Consolas, "Courier New", monospace;
+			font-size: 0.8rem;
+		}
+
+		.symbol-item .symbol-name {
+			flex: 1;
+			min-width: 0;
+			overflow: hidden;
+			text-overflow: ellipsis;
+			white-space: nowrap;
+		}
+
+		.symbol-item .symbol-line {
+			margin-left: auto;
+			color: var(--muted);
+			font-size: 0.74rem;
+			font-family: "IBM Plex Mono", Consolas, "Courier New", monospace;
+		}
+
+		.file-item:hover,
+		.symbol-item:hover,
+		.history-item:hover,
+		.solution-entry:hover {
+			background: #eef4ff;
+		}
+
+		.file-item.active,
+		.symbol-item.active {
+			background: var(--primary-soft);
+			color: #164992;
+			font-weight: 600;
+		}
+
+		#divProject,
+		#divSolution,
+		#divSolutionHistory,
+		#divSolutionExamples,
+		#divImmediateHistory,
+		#divSymbolTable,
+		#divRecentSymbols {
+			background: linear-gradient(180deg, #f9fbff 0%, #f4f8ff 100%);
+			border: 1px solid #e3eaf7;
+			border-radius: 10px;
+		}
+
+		.modal {
+			display: none;
+			position: fixed;
+			z-index: 1050;
+			inset: 0;
+			background: rgba(13, 24, 40, 0.38);
+			backdrop-filter: blur(3px);
+		}
+
+		.modal-card {
+			width: min(760px, 95vw);
+			max-height: 90vh;
+			overflow: auto;
+			margin: 4.5vh auto;
+			border-radius: 14px;
+		}
+
+		.btn {
+			border-radius: 9px;
+			font-weight: 600;
+		}
+
+		.top-toolbar {
+			background: var(--surface);
+			border: 1px solid var(--border);
+			border-radius: 12px;
+			padding: 7px 8px;
+			box-shadow: var(--shadow);
+		}
+
+		.top-toolbar .btn-group .btn {
+			display: inline-flex;
+			align-items: center;
+			gap: 6px;
+		}
+
+		.window-size-controls .btn {
+			display: inline-flex;
+			align-items: center;
+			gap: 4px;
+		}
+
+		.setting-check {
+			margin: 0;
+			padding-right: 6px;
+		}
+
+		.setting-check .form-check-input {
+			width: 2.2rem;
+			height: 1.15rem;
+			border-color: #9fb3d8;
+			background-color: #d9e4f8;
+			cursor: pointer;
+		}
+
+		.setting-check .form-check-input:checked {
+			border-color: var(--primary);
+			background-color: var(--primary);
+		}
+
+		.setting-check .form-check-label {
+			display: inline-flex;
+			align-items: center;
+			gap: 6px;
+			color: #32435f;
+			font-weight: 600;
+			font-size: 0.84rem;
+			cursor: pointer;
+			margin-left: 2px;
+		}
+
+		.debug-break-marker {
+			background: rgba(255, 193, 7, 0.3);
+		}
+
+		.hidden {
+			display: none !important;
+		}
+
+		::-webkit-scrollbar {
+			width: 10px;
+			height: 10px;
+		}
+
+		::-webkit-scrollbar-track {
+			background: #dde5f2;
+		}
+
+		::-webkit-scrollbar-thumb {
+			background: #9eb1cc;
+			border-radius: 99px;
+			border: 2px solid #dde5f2;
+		}
+
+		@media (max-width: 992px) {
+			.editor-shell {
+				flex-direction: column;
+				height: auto;
+				min-height: 0;
+			}
+
+			#rightPanel {
+				width: 100%;
+				min-width: 0;
+				height: 42vh;
+			}
+
+			#outputWindow {
+				height: 40vh;
+			}
+		}
+
+		@media (max-width: 768px) {
+			header {
+				flex-direction: column;
+				align-items: flex-start !important;
+				gap: 8px;
+			}
+
+			.window-size-controls {
+				width: 100%;
+				justify-content: space-between;
+			}
+
+			.top-toolbar {
+				padding: 6px;
+				gap: 6px !important;
+			}
+
+			.top-toolbar .btn-group {
+				width: 100%;
+				display: grid;
+				grid-template-columns: repeat(2, minmax(0, 1fr));
+				gap: 6px;
+			}
+
+			.top-toolbar .btn-group .btn {
+				border-radius: 8px !important;
+				justify-content: center;
+			}
+
+			.top-toolbar .settings-wrap {
+				width: 100%;
+				margin-left: 0 !important;
+				padding-top: 2px;
+				display: flex;
+				flex-wrap: wrap;
+				gap: 8px;
+			}
+
+			.setting-check .form-check-label {
+				font-size: 0.8rem;
+			}
+
+			.modal-card {
+				margin: 2vh auto;
+				width: min(96vw, 760px);
+			}
+
+			#outputWindow {
+				height: 34vh;
+			}
+		}
+	</style>
+</head>
+<body class="bg-body-tertiary">
+	<div class="container-fluid p-2 d-flex flex-column h-100">
+		<header class="d-flex align-items-center justify-content-between mb-1">
+			<div>
+				<h1 class="h5 mb-0">ProtoScript Workbench</h1>
+				<small id="headerProjectName" class="text-secondary"></small>
+			</div>
+			<div class="window-size-controls d-flex align-items-center gap-2">
+				<button type="button" class="btn btn-sm btn-outline-secondary" onclick="OnMaximize()"><i class="bi bi-arrows-fullscreen"></i>Max</button>
+				<button type="button" class="btn btn-sm btn-outline-secondary" onclick="OnHalfize()"><i class="bi bi-layout-split"></i>Half</button>
+				<button type="button" class="btn btn-sm btn-outline-secondary" onclick="OnMinimize()"><i class="bi bi-dash-square"></i>Min</button>
+			</div>
+		</header>
+
+		<div class="top-toolbar d-flex flex-wrap gap-2 align-items-center mb-1">
+			<div class="btn-group btn-group-sm" role="group" aria-label="File actions">
+				<button type="button" class="btn btn-outline-primary" onclick="OnMenuLoadProject()"><i class="bi bi-folder2-open"></i>Load Project</button>
+				<button type="button" class="btn btn-outline-primary" onclick="OnMenuAddFile()"><i class="bi bi-file-earmark-plus"></i>Add File</button>
+				<button type="button" class="btn btn-outline-primary" onclick="OnMenuSaveFile()"><i class="bi bi-floppy"></i>Save</button>
+			</div>
+			<div class="btn-group btn-group-sm" role="group" aria-label="Build actions">
+				<button type="button" class="btn btn-outline-primary" onclick="CompileCode()"><i class="bi bi-building"></i> Compile</button>
+				<button type="button" class="btn btn-outline-primary" onclick="OnInterpretImmediate()"><i class="bi bi-lightning-charge-fill"></i> Interpret</button>
+			</div>
+			<div class="settings-wrap d-flex flex-wrap align-items-center gap-1 ms-1">
+			<div class="form-check form-switch form-check-inline setting-check">
+				<input class="form-check-input" type="checkbox" id="settingShowTypeOfs" onclick="OnSettingShowTypeOfs(this)">
+				<label class="form-check-label" for="settingShowTypeOfs"><i class="bi bi-diagram-3"></i>Type Ofs</label>
+			</div>
+			<div class="form-check form-switch form-check-inline setting-check">
+				<input class="form-check-input" type="checkbox" id="settingDebugMode" onclick="OnSettingDebugMode(this)">
+				<label class="form-check-label" for="settingDebugMode"><i class="bi bi-bug"></i>Debug</label>
+			</div>
+			<div class="form-check form-switch form-check-inline setting-check">
+				<input class="form-check-input" type="checkbox" id="settingResumeExecution" onclick="OnSettingResumeExecution(this)">
+				<label class="form-check-label" for="settingResumeExecution"><i class="bi bi-arrow-repeat"></i>Resume</label>
+			</div>
+			</div>
+			<span id="txtTaggingProgress" class="small text-secondary"></span>
+		</div>
+
+		<div class="editor-shell d-flex gap-2 flex-grow-1 overflow-hidden">
+			<section class="card flex-grow-1 d-flex flex-column overflow-hidden">
+				<div class="card-body p-0 d-flex flex-column overflow-hidden">
+					<textarea id="codeEditor"></textarea>
+					<input type="text" id="txtFileName" class="d-none">
+				</div>
+			</section>
+
+			<aside id="rightPanel" class="card d-flex flex-column overflow-hidden">
+				<div class="card-header p-0">
+					<div class="d-flex border-bottom">
+						<button type="button" class="tab-button right-tab-button btn btn-sm btn-light rounded-0 active" data-pane="right" data-tab="tab-solution">Project</button>
+						<button type="button" class="tab-button right-tab-button btn btn-sm btn-light rounded-0" data-pane="right" data-tab="tab-history">Recent</button>
+						<button type="button" class="tab-button right-tab-button btn btn-sm btn-light rounded-0" data-pane="right" data-tab="tab-symbols">Symbols</button>
+					</div>
+				</div>
+				<div class="card-body p-2 d-flex flex-column overflow-hidden">
+					<div id="tab-solution" class="tab-content right-tab-content active flex-column flex-grow-1 overflow-hidden">
+						<input type="search" id="txtProjectFileSearch" class="form-control form-control-sm mb-2" placeholder="Search project files">
+						<div id="divProject" class="overflow-auto small flex-grow-1"></div>
+					</div>
+					<div id="tab-history" class="tab-content right-tab-content flex-column flex-grow-1 overflow-hidden">
+						<input type="search" id="txtFileSearch" class="form-control form-control-sm mb-2" placeholder="Search recent files">
+						<div id="divSolution" class="overflow-auto small flex-grow-1"></div>
+					</div>
+					<div id="tab-symbols" class="tab-content right-tab-content flex-column flex-grow-1 overflow-hidden">
+						<input type="search" id="txtSymbolSearch" class="form-control form-control-sm mb-2" placeholder="Search symbols">
+						<div id="divRecentSymbols" class="overflow-auto small mb-2" style="max-height: 90px;"></div>
+						<div id="divSymbolTable" class="overflow-auto small flex-grow-1"></div>
+					</div>
+				</div>
+			</aside>
+		</div>
+
+		<div id="outputResizer"></div>
+
+		<section id="outputWindow" class="card d-flex flex-column mt-1 overflow-hidden">
+			<div class="card-header p-1 d-flex align-items-center justify-content-between">
+				<div>
+					<button type="button" class="tab-button bottom-tab-button btn btn-sm btn-light active" data-pane="bottom" data-tab="consoleContent"><i class="bi bi-terminal me-1"></i>Debugger</button>
+				</div>
+				<div class="DebuggingControls hidden d-flex gap-1">
+					<button type="button" class="btn btn-sm btn-outline-primary" onclick="OnResumeDebugging()" title="Resume"><i class="bi bi-play-fill"></i></button>
+					<button type="button" class="btn btn-sm btn-outline-primary" onclick="OnForceStopDebugging()" title="Stop"><i class="bi bi-stop-fill"></i></button>
+					<button type="button" class="btn btn-sm btn-outline-primary" onclick="OnStepNext()" title="Step Into"><i class="bi bi-arrow-down"></i></button>
+					<button type="button" class="btn btn-sm btn-outline-primary" onclick="OnStepOver()" title="Step Over"><i class="bi bi-arrow-right"></i></button>
+				</div>
+			</div>
+			<div id="divTaggingControls" class="d-none">
+				<input type="checkbox" id="chkIncludeTypeOfs">
+				<input type="checkbox" id="chkDebug">
+				<input type="checkbox" id="chkResume">
+			</div>
+			<div class="card-body p-0 overflow-hidden">
+				<div id="consoleContent" class="tab-content bottom-tab-content active h-100 flex-column">
+					<textarea id="txtResults2" class="form-control rounded-0 border-0 border-bottom flex-grow-1" readonly></textarea>
+					<div class="p-2 border-top d-flex gap-2">
+						<textarea id="txtImmediate" rows="2" class="form-control" placeholder="Enter command"></textarea>
+						<button id="runImmediateCmdBtn" type="button" class="btn btn-primary">Run</button>
+					</div>
+					<div id="divImmediateHistory" class="p-2 border-top overflow-auto" style="max-height: 90px;"></div>
+				</div>
+			</div>
+		</section>
+	</div>
+
+	<div id="loadProjectModal" class="modal">
+		<div class="modal-card card shadow">
+			<div class="card-header d-flex align-items-center justify-content-between">
+				<h2 class="h6 mb-0">Load Project</h2>
+				<button id="closeModalBtn" type="button" class="btn-close" aria-label="Close" onclick="hideModal()"></button>
+			</div>
+			<div class="card-body">
+				<label for="txtSolution" class="form-label">Project Path (.pts)</label>
+				<input type="text" id="txtSolution" class="form-control" placeholder="C:\dev\ai\Ontology8\tests\protoscript\command-args\Project.pts">
+				<div class="mt-3">
+					<div class="small text-secondary mb-1">Recent</div>
+					<div id="divSolutionHistory" class="border rounded p-2" style="max-height: 160px; overflow: auto;"></div>
+				</div>
+				<div class="mt-3">
+					<div class="small text-secondary mb-1">Examples</div>
+					<div id="divSolutionExamples" class="border rounded p-2" style="max-height: 160px; overflow: auto;"></div>
+				</div>
+			</div>
+			<div class="card-footer d-flex justify-content-end gap-2">
+				<button id="modalCancelLoadBtn" type="button" class="btn btn-sm btn-outline-secondary" onclick="hideModal()">Cancel</button>
+				<button id="modalConfirmLoadBtn" type="button" class="btn btn-sm btn-primary" onclick="OnLoadProject()">Load</button>
+			</div>
+		</div>
+	</div>
+
+	<div id="addFileModal" class="modal">
+		<div class="modal-card card shadow" style="width: min(520px, 95vw);">
+			<div class="card-header d-flex align-items-center justify-content-between">
+				<h2 class="h6 mb-0">Add File</h2>
+				<button id="closeAddFileModalBtn" type="button" class="btn-close" aria-label="Close" onclick="hideModal()"></button>
+			</div>
+			<div class="card-body">
+				<label for="newFileName" class="form-label">File Name</label>
+				<input type="text" id="newFileName" class="form-control" placeholder="NewFile.pts">
+				<div id="addFileError" class="text-danger small mt-2 hidden">Please enter a file name.</div>
+			</div>
+			<div class="card-footer d-flex justify-content-end gap-2">
+				<button id="modalCancelAddFileBtn" type="button" class="btn btn-sm btn-outline-secondary" onclick="hideModal()">Cancel</button>
+				<button id="modalConfirmAddFileBtn" type="button" class="btn btn-sm btn-primary" onclick="OnAddFileConfirm()">Add</button>
+			</div>
+		</div>
+	</div>
+
+	<script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.15/codemirror.min.js"></script>
+	<script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.15/mode/clike/clike.min.js"></script>
+	<script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.15/addon/search/searchcursor.min.js"></script>
+	<script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.15/addon/search/search.min.js"></script>
+	<script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.15/addon/dialog/dialog.min.js"></script>
+	<script src="/js/plugins/codemirror/simple-hint.js"></script>
+
+	<script src="//static.buffa.ly/v2/js/global.js"></script>
+	<script src="//static.buffa.ly/v2/js/LocalStorage2.js"></script>
+	<script src="//static.buffa.ly/v2/js/moremoo4.js?v=2"></script>
+	<script src="//static.buffa.ly/v2/js/JsonMethod.js?v=2"></script>
+	<script src="//static.buffa.ly/v2/js/validators.js?v=2"></script>
+	<script src="//static.buffa.ly/v2/js/UserMessages.js"></script>
+	<script src="//static.buffa.ly/v2/js/grid4.js"></script>
+	<script src="//static.buffa.ly/v2/js/stl.js?v=2"></script>
+	<script src="//static.buffa.ly/v2/js/gridselector.js"></script>
+	<script src="//static.buffa.ly/v2/js/moment.min.js"></script>
+	<script src="//static.buffa.ly/v2/js/DateUtil.js"></script>
+
+	<script src="/JsonWS/ProtoScript.Extensions.ProtoScriptWorkbench.ashx.js?v=2"></script>
+	<script src="/js/editor.js"></script>
+	<script src="/js/editor-menu.js"></script>
+</body>
+</html>

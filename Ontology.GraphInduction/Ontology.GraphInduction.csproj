@@ -1,0 +1,39 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+	<PropertyGroup>
+		<TargetFramework>net9.0</TargetFramework>
+		<Nullable>enable</Nullable>
+		<ImplicitUsings>enable</ImplicitUsings>
+		<RootNamespace>Ontology.GraphInduction</RootNamespace>
+	</PropertyGroup>
+
+	<ItemGroup>
+		<ProjectReference Include="..\ProtoScript.Interpretter\ProtoScript.Interpretter.csproj" />
+		<ProjectReference Include="..\ProtoScript.Parsers\ProtoScript.Parsers.csproj" />
+		<ProjectReference Include="..\ProtoScript\ProtoScript.csproj" />
+		<Reference Include="Ontology">
+			<HintPath>..\Deploy\Ontology.dll</HintPath>
+		</Reference>
+		<Reference Include="Ontology.Simulation">
+			<HintPath>..\Deploy\Ontology.Simulation.dll</HintPath>
+		</Reference>
+		<Reference Include="BasicUtilities">
+			<HintPath>..\lib\BasicUtilities.dll</HintPath>
+		</Reference>
+		<Reference Include="CSharp">
+		  <HintPath>..\lib\CSharp.dll</HintPath>
+		</Reference>
+		<Reference Include="CSharp.Parsers">
+		  <HintPath>..\lib\CSharp.Parsers.dll</HintPath>
+		</Reference>
+		<Reference Include="WebAppUtilities">
+		  <HintPath>..\lib\WebAppUtilities.dll</HintPath>
+		</Reference>
+	</ItemGroup>
+
+	<Target Name="PostBuild" AfterTargets="PostBuildEvent" Condition="'$(Configuration)' != 'Release'">
+		<Exec Command="copy /Y &quot;$(TargetDir)$(ProjectName).dll&quot; &quot;$(MSBuildProjectDirectory)\..\Deploy\$(ProjectName).dll&quot;" />
+		<Exec Command="call &quot;$(MSBuildProjectDirectory)\..\Scripts\update_dlls.bat&quot;" />
+	</Target>
+
+</Project>
