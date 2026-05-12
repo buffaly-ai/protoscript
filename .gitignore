@@ -1,4 +1,4 @@
-﻿.vs/
+.vs/
 bin/
 obj/
 artifacts/
@@ -12,3 +12,5 @@ logs/
 *.key
 appsettings.Development.json
 NuGet.config
+Deploy/ProtoScript*.dll
+Deploy/ProtoScript*.pdb
