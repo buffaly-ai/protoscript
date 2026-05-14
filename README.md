@@ -15,6 +15,16 @@ ProtoScript sits under Buffaly's semantic runtime: ontology objects define graph
 - Workbench API/web projects
 - Tests and integration coverage
 
+## ProtoScript reference docs
+
+The detailed ProtoScript reference manual is included in this repository under [`docs/ProtoScript/`](docs/ProtoScript/).
+
+Start with the docs index:
+
+- [`docs/ProtoScript/README.md`](docs/ProtoScript/README.md)
+
+That index links to the higher-level ProtoScript material that was split out of the original reference manual, including prototypes, ontology context, relationships, shadows and LGG, prototype paths, subtypes, and transformation functions.
+
 ## Repository map
 
 - `Ontology.GraphInduction/Ontology.GraphInduction.csproj`
