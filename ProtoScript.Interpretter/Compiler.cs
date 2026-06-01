@@ -1350,7 +1350,14 @@ import Ontology.Simulation Ontology.Simulation.BoolWrapper Boolean;
 		{
 			Compiled.Expression compiledLeft = Compile(op.Left);
 			if (null == compiledLeft)
+			{
+				if (op.Left is Identifier leftIdentifier && op.Right is MethodEvaluation rightMethod && IsPrimitiveTypeAlias(leftIdentifier.Value))
+				{
+					this.AddDiagnostic(new Diagnostic($"Cannot resolve '{leftIdentifier.Value}.{rightMethod.MethodName}'. Primitive type aliases are not callable static .NET types in this context."), null, op);
+				}
+
 				return null;
+			}
 
 			if (op.Right is Identifier)
 			{
@@ -2410,6 +2417,12 @@ import Ontology.Simulation Ontology.Simulation.BoolWrapper Boolean;
 
 				if (null == objCur)
 				{
+					if (IsPrimitiveTypeAlias(strSplits[0]))
+					{
+						this.AddDiagnostic(new Diagnostic($"Cannot resolve '{strSplits[0]}.{strSplits[1]}'. Primitive type aliases are not callable static .NET types in this context."), null, exp);
+						return null;
+					}
+
 					this.AddDiagnostic(new Diagnostic($"Cannot find identifier {strSplits[0]}"), null, exp);
 					return null;
 				}
@@ -2527,6 +2540,24 @@ import Ontology.Simulation Ontology.Simulation.BoolWrapper Boolean;
 
 			this.AddDiagnostic(new Diagnostic($"Cannot find identifier {strPath}"), null, exp);
 			return null;
+		}
+
+		private static bool IsPrimitiveTypeAlias(string identifier)
+		{
+			return identifier == "bool"
+				|| identifier == "byte"
+				|| identifier == "char"
+				|| identifier == "decimal"
+				|| identifier == "double"
+				|| identifier == "float"
+				|| identifier == "int"
+				|| identifier == "long"
+				|| identifier == "sbyte"
+				|| identifier == "short"
+				|| identifier == "string"
+				|| identifier == "uint"
+				|| identifier == "ulong"
+				|| identifier == "ushort";
 		}
 
 		public Compiled.Expression Compile(Literal literal)
@@ -2877,6 +2908,14 @@ import Ontology.Simulation Ontology.Simulation.BoolWrapper Boolean;
 				Compiled.Expression expression = Compile(strIdentifier, methodEval);
 				if (null == expression)
 				{
+					int separator = strIdentifier.IndexOf('.');
+					string rootIdentifier = separator < 0 ? strIdentifier : strIdentifier.Substring(0, separator);
+					if (IsPrimitiveTypeAlias(rootIdentifier))
+					{
+						this.AddDiagnostic(new Diagnostic($"Cannot resolve '{methodEval.MethodName}'. Primitive type aliases are not callable static .NET types in this context."), null, methodEval);
+						return null;
+					}
+
 					this.AddDiagnostic(new Diagnostic($"Could not find method {methodEval.MethodName}"), null, methodEval);
 					return null;
 				}

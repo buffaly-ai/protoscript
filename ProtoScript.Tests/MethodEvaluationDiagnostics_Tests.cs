@@ -101,6 +101,23 @@ prototype ToGetBuffalyRuntimeModelAndReasoning : BaseObject
 			}
 		}
 
+		[TestMethod]
+		public void Compile_IntParsePrimitiveAliasCall_ReportsPrimitiveAliasDiagnostic()
+		{
+			Compiler compiler = new Compiler();
+			compiler.Initialize();
+
+			compiler.Compile(ProtoScript.Parsers.Files.ParseFileContents(@"
+function Build(string maxSteps) : int
+{
+	return int.Parse(maxSteps);
+}"));
+
+			Assert.IsTrue(
+				compiler.Diagnostics.Any(x => (x.Diagnostic?.Message ?? string.Empty).Contains("Cannot resolve 'int.Parse'. Primitive type aliases are not callable static .NET types in this context.", StringComparison.Ordinal)),
+				string.Join(Environment.NewLine, compiler.Diagnostics.Select(x => x.Diagnostic?.Message ?? string.Empty)));
+		}
+
 		private static string CreateTempDirectory()
 		{
 			string path = Path.Combine(Path.GetTempPath(), "ProtoScriptMethodEvalDiag_" + Guid.NewGuid().ToString("N"));
