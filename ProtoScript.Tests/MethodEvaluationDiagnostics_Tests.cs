@@ -118,6 +118,49 @@ function Build(string maxSteps) : int
 				string.Join(Environment.NewLine, compiler.Diagnostics.Select(x => x.Diagnostic?.Message ?? string.Empty)));
 		}
 
+		[TestMethod]
+		public void CompileProject_InvalidPromptActionEntityNameInitializer_ReportsActionableFieldContext()
+		{
+			string tempDir = CreateTempDirectory();
+			try
+			{
+				string projectPath = Path.Combine(tempDir, "Project.pts");
+				System.IO.File.WriteAllText(projectPath, "include \"BrokenPromptActions.pts\";");
+				System.IO.File.WriteAllText(Path.Combine(tempDir, "BrokenPromptActions.pts"),
+@"prototype BaseObject;
+prototype ProtoScriptAction : BaseObject
+{
+	String InfinitivePhrase = new String();
+	String Description = new String();
+}
+
+prototype PromptAction : ProtoScriptAction
+{
+	String PromptPath = new String();
+}
+
+prototype ToBrokenPromptActionSkill : PromptAction
+{
+	EntityName = ""bad prompt action entity initializer"";
+	InfinitivePhrase = ""to run broken prompt action"";
+}");
+
+				Compiler compiler = new Compiler();
+				compiler.Initialize();
+				compiler.CompileProject(projectPath);
+
+				string diagnostics = string.Join(Environment.NewLine, compiler.Diagnostics.Select(x => x.Diagnostic?.Message ?? string.Empty));
+				Assert.IsTrue(diagnostics.Contains("Could not resolve field: EntityName", StringComparison.Ordinal), diagnostics);
+				Assert.IsTrue(diagnostics.Contains("ToBrokenPromptActionSkill", StringComparison.Ordinal), diagnostics);
+				Assert.IsTrue(diagnostics.Contains("PromptAction", StringComparison.Ordinal), diagnostics);
+				Assert.IsTrue(diagnostics.Contains("BrokenPromptActions.pts", StringComparison.OrdinalIgnoreCase), diagnostics);
+			}
+			finally
+			{
+				DeleteDirectory(tempDir);
+			}
+		}
+
 		private static string CreateTempDirectory()
 		{
 			string path = Path.Combine(Path.GetTempPath(), "ProtoScriptMethodEvalDiag_" + Guid.NewGuid().ToString("N"));

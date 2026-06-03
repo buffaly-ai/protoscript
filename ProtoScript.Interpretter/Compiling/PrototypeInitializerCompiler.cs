@@ -1,4 +1,4 @@
-﻿//added
+//added
 using BasicUtilities;
 using ProtoScript.Interpretter.Compiled;
 using ProtoScript.Interpretter.RuntimeInfo;
@@ -92,7 +92,7 @@ namespace ProtoScript.Interpretter.Compiling
 
 					if (lhs == null)
 					{
-						compiler.AddDiagnostic("Could not resolve field: " + strPropertyName, initializer, null);
+						compiler.AddDiagnostic(BuildUnresolvedInitializerFieldDiagnostic(strPropertyName, infoThis, initializer), initializer, null);
 						return null;
 					}
 				}
@@ -133,7 +133,7 @@ namespace ProtoScript.Interpretter.Compiling
 				FieldTypeInfo fieldTypeInfo = compiler.GetFieldInfo(infoThis, strPropertyName);
 				if (null == fieldTypeInfo)
 				{
-					compiler.AddDiagnostic("Could not resolve field: " + strPropertyName, initializer, null);
+					compiler.AddDiagnostic(BuildUnresolvedInitializerFieldDiagnostic(strPropertyName, infoThis, initializer), initializer, null);
 					return null;
 				}
 
@@ -143,6 +143,18 @@ namespace ProtoScript.Interpretter.Compiling
 			}
 
 			return lstStatements;
+		}
+
+		private static string BuildUnresolvedInitializerFieldDiagnostic(string strPropertyName, PrototypeTypeInfo infoThis, Statement initializer)
+		{
+			string prototypeName = infoThis.Prototype?.PrototypeName ?? "unknown";
+			string parentName = infoThis.PrimaryParent?.PrototypeName ?? "unknown";
+			string fileName = string.IsNullOrWhiteSpace(initializer.Info?.File) ? "unknown" : initializer.Info.File;
+			return "Could not resolve field: " + strPropertyName
+				+ " on prototype " + prototypeName
+				+ " with primary parent " + parentName
+				+ " in " + fileName
+				+ ". Check whether the field exists on the prototype inheritance chain or should be represented as an annotation.";
 		}
 	}
 }
