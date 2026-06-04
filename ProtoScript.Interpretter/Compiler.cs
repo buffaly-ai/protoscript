@@ -2423,7 +2423,7 @@ import Ontology.Simulation Ontology.Simulation.BoolWrapper Boolean;
 						return null;
 					}
 
-					this.AddDiagnostic(new Diagnostic($"Cannot find identifier {strSplits[0]}"), null, exp);
+					this.AddDiagnostic(new Diagnostic(BuildCannotFindIdentifierDiagnostic(strSplits[0], exp)), null, exp);
 					return null;
 				}
 
@@ -2538,8 +2538,15 @@ import Ontology.Simulation Ontology.Simulation.BoolWrapper Boolean;
 				return objCur;
 			}
 
-			this.AddDiagnostic(new Diagnostic($"Cannot find identifier {strPath}"), null, exp);
+			this.AddDiagnostic(new Diagnostic(BuildCannotFindIdentifierDiagnostic(strPath, exp)), null, exp);
 			return null;
+		}
+
+		private static string BuildCannotFindIdentifierDiagnostic(string identifier, Expression exp)
+		{
+			string fileName = string.IsNullOrWhiteSpace(exp.Info?.File) ? "unknown" : exp.Info.File;
+			string offset = exp.Info == null ? "unknown" : exp.Info.StartingOffset.ToString();
+			return $"Cannot find identifier {identifier} in {fileName} at offset {offset}";
 		}
 
 		private static bool IsPrimitiveTypeAlias(string identifier)

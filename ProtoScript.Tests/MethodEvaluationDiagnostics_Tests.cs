@@ -161,6 +161,38 @@ prototype ToBrokenPromptActionSkill : PromptAction
 			}
 		}
 
+		[TestMethod]
+		public void CompileProject_UnresolvedMethodIdentifier_ReportsSourceFileContext()
+		{
+			string tempDir = CreateTempDirectory();
+			try
+			{
+				string projectPath = Path.Combine(tempDir, "Project.pts");
+				System.IO.File.WriteAllText(projectPath, "include \"BrokenAction.pts\";");
+				System.IO.File.WriteAllText(Path.Combine(tempDir, "BrokenAction.pts"),
+@"prototype BaseObject;
+prototype BrokenAction : BaseObject
+{
+	function Execute() : string
+	{
+		return MissingAction.Execute();
+	}
+}");
+
+				Compiler compiler = new Compiler();
+				compiler.Initialize();
+				compiler.CompileProject(projectPath);
+
+				string diagnostics = string.Join(Environment.NewLine, compiler.Diagnostics.Select(x => x.Diagnostic?.Message ?? string.Empty));
+				Assert.IsTrue(diagnostics.Contains("Cannot find identifier MissingAction", StringComparison.Ordinal), diagnostics);
+				Assert.IsTrue(diagnostics.Contains("BrokenAction.pts", StringComparison.OrdinalIgnoreCase), diagnostics);
+			}
+			finally
+			{
+				DeleteDirectory(tempDir);
+			}
+		}
+
 		private static string CreateTempDirectory()
 		{
 			string path = Path.Combine(Path.GetTempPath(), "ProtoScriptMethodEvalDiag_" + Guid.NewGuid().ToString("N"));
