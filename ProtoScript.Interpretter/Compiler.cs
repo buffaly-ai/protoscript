@@ -512,7 +512,7 @@ import Ontology.Simulation Ontology.Simulation.BoolWrapper Boolean;
 
 				Parallel.ForEach(batch, fileCurrent =>
 				{
-					string rootDir = StringUtil.LeftOfLast(fileCurrent.Info.FullName, "\\");
+					string rootDir = GetFileDirectory(fileCurrent);
 
 					foreach (IncludeStatement inc in fileCurrent.Includes)
 					{
@@ -521,7 +521,7 @@ import Ontology.Simulation Ontology.Simulation.BoolWrapper Boolean;
 						? Directory.GetFiles(rootDir,
 						inc.FileName,
 						inc.Recursive ? SearchOption.AllDirectories : SearchOption.TopDirectoryOnly)
-						: new[] { FileUtil.BuildPath(rootDir, inc.FileName) };
+						: new[] { BuildIncludePath(rootDir, inc.FileName) };
 
 						foreach (string path in paths)
 						{
@@ -561,7 +561,7 @@ import Ontology.Simulation Ontology.Simulation.BoolWrapper Boolean;
 			bool bIgnoreErrors,
 			Action<string, Exception>? includeParseFailureHandler)
 		{
-			string strRootDir = StringUtil.LeftOfLast(file.Info.FullName, "\\");
+			string strRootDir = GetFileDirectory(file);
 
 			foreach (IncludeStatement include in file.Includes)
 			{
@@ -594,7 +594,7 @@ import Ontology.Simulation Ontology.Simulation.BoolWrapper Boolean;
 				}
 				else
 				{
-					string path = FileUtil.BuildPath(strRootDir, include.FileName);
+					string path = BuildIncludePath(strRootDir, include.FileName);
 					File? fileSub = TryParse(path, bIgnoreErrors, include, file, includeParseFailureHandler);
 					if (fileSub != null)
 					{
@@ -617,6 +617,26 @@ import Ontology.Simulation Ontology.Simulation.BoolWrapper Boolean;
 					}
 				}
 			}
+		}
+
+
+		// Resolve a ProtoScript file's directory with platform-native path rules instead of assuming Windows separators.
+		static private string GetFileDirectory(File file)
+		{
+			string fullName = file.Info?.FullName ?? string.Empty;
+			string? directory = Path.GetDirectoryName(fullName);
+			if (string.IsNullOrWhiteSpace(directory))
+				return Directory.GetCurrentDirectory();
+			return directory;
+		}
+
+
+		// Compose include paths through System.IO so Unix project files do not resolve under literal Project.pts\ aliases.
+		static private string BuildIncludePath(string rootDirectory, string includeFileName)
+		{
+			if (Path.IsPathRooted(includeFileName))
+				return includeFileName;
+			return Path.Combine(rootDirectory, includeFileName);
 		}
 
 

@@ -97,6 +97,46 @@ extern String RuntimeMessage;",
 			System.IO.File.WriteAllText(Path.Combine(tempDir, "Skill.pts"), skillContents);
 		}
 
+		[TestMethod]
+		public void CompileProject_ResolvesIncludesFromProjectDirectoryWithoutProjectFileAlias()
+		{
+			string tempDir = CreateTempDirectory();
+			try
+			{
+				System.IO.File.WriteAllText(
+					Path.Combine(tempDir, "Project.pts"),
+					"include \"Imports.pts\";" + Environment.NewLine + "include \"Nested/Skill.pts\";");
+				System.IO.File.WriteAllText(
+					Path.Combine(tempDir, "Imports.pts"),
+					"reference Ontology.Simulation Ontology.Simulation;" + Environment.NewLine
+					+ "import Ontology.Simulation Ontology.Simulation.StringWrapper String;" + Environment.NewLine
+					+ "extern String RuntimeMessage;");
+				Directory.CreateDirectory(Path.Combine(tempDir, "Nested"));
+				System.IO.File.WriteAllText(
+					Path.Combine(tempDir, "Nested", "Skill.pts"),
+					"prototype Skill" + Environment.NewLine
+					+ "{" + Environment.NewLine
+					+ "\tfunction Echo() : String" + Environment.NewLine
+					+ "\t{" + Environment.NewLine
+					+ "\t\treturn RuntimeMessage;" + Environment.NewLine
+					+ "\t}" + Environment.NewLine
+					+ "}");
+
+				Compiler compiler = new Compiler();
+				compiler.Initialize();
+
+				compiler.CompileProject(Path.Combine(tempDir, "Project.pts"));
+
+				Assert.AreEqual(0, compiler.Diagnostics.Count);
+				Assert.IsFalse(Directory.Exists(Path.Combine(tempDir, "Project.pts\\Nested")));
+				Assert.IsFalse(System.IO.File.Exists(Path.Combine(tempDir, "Project.pts\\Nested", "Skill.pts")));
+			}
+			finally
+			{
+				DeleteDirectory(tempDir);
+			}
+		}
+
 		private static string CreateTempDirectory()
 		{
 			string path = Path.Combine(Path.GetTempPath(), "ProtoScriptCompileProject_" + Guid.NewGuid().ToString("N"));
