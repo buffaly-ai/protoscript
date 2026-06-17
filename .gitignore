@@ -118,3 +118,12 @@ desktop.ini
 !Deploy/ProtoScript*.dll
 !Deploy/ProtoScript*.pdb
 
+
+# Public source hygiene: generated runtime payloads and test logs
+buffaly.agent.web/
+test-output*.log
+
+# Public source hygiene: generated artifacts and publish output
+**/artifacts/
+**/publish/
+**/bin/Release/**/publish/
