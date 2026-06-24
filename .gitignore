@@ -113,12 +113,6 @@ nuget.config
 Thumbs.db
 desktop.ini
 
-# ProtoScript intentionally ships selected Deploy binaries for closed dependency compatibility.
-!Deploy/
-!Deploy/ProtoScript*.dll
-!Deploy/ProtoScript*.pdb
-
-
 # Public source hygiene: generated runtime payloads and test logs
 buffaly.agent.web/
 test-output*.log
