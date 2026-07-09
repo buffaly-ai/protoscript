@@ -196,6 +196,65 @@ function main() : string
 			Assert.IsFalse(json.Contains("\"maxResults\":true", StringComparison.OrdinalIgnoreCase), json);
 		}
 
+		[TestMethod]
+		public void TryBindMethodCall_RawIntParameter_BindsAndRunsAsInteger()
+		{
+			string code = @"
+reference BasicUtilities BasicUtilities;
+import BasicUtilities BasicUtilities.JsonObject JsonObject;
+
+function Search(string query, int maxResults) : string
+{
+	JsonObject args = new JsonObject();
+	args[""query""] = query;
+	int resolvedMaxResults = maxResults;
+	if (resolvedMaxResults <= 0)
+	{
+		resolvedMaxResults = 50;
+	}
+	args[""maxResults""] = resolvedMaxResults;
+	return args.ToString();
+}
+";
+
+			Compiler compiler = new Compiler();
+			compiler.Initialize();
+			ProtoScript.File file = ProtoScript.Parsers.Files.ParseFileContents(code);
+			ProtoScript.Interpretter.Compiled.File compiled = compiler.Compile(file);
+
+			Assert.AreEqual(
+				0,
+				compiler.Diagnostics.Count,
+				string.Join("\n", compiler.Diagnostics.Select(d => d.Diagnostic?.Message ?? "(null)")));
+
+			NativeInterpretter interpretter = new NativeInterpretter(compiler);
+			interpretter.Evaluate(compiled);
+
+			var rawParameters = new Dictionary<string, object?>
+			{
+				["query"] = "diabetes",
+				["maxResults"] = 10
+			};
+
+			bool bound = interpretter.TryBindMethodCall(
+				null,
+				"Search",
+				rawParameters,
+				out FunctionRuntimeInfo? method,
+				out Dictionary<string, object> boundParameters,
+				out string error);
+
+			Assert.IsTrue(bound, error);
+			Assert.IsNotNull(method);
+			Assert.AreEqual(10, boundParameters["maxResults"]);
+
+			object? result = interpretter.RunMethod(method!, null, method!.Parameters.Select(parameter => boundParameters[parameter.ParameterName]).ToList());
+			string json = result?.ToString() ?? string.Empty;
+			Assert.IsTrue(json.Contains("\"query\":\"diabetes\""), json);
+			Assert.IsTrue(json.Contains("\"maxResults\":10"), json);
+			Assert.IsFalse(json.Contains("\"maxResults\":true", StringComparison.OrdinalIgnoreCase), json);
+		}
+
 		private static Compiler CreateCompilerWithType(string typeAlias, System.Type type)
 		{
 			Compiler compiler = new Compiler();
