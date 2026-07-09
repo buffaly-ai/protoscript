@@ -87,6 +87,27 @@ function main() : int
 			Assert.AreEqual(10, (int)result);
 		}
 
+		// Purpose: Verify a comparison condition does not leak its boolean value into the selected integer branch result.
+		[TestMethod]
+		public void Ternary_ComparisonCondition_ReturnsSelectedIntegerBranch()
+		{
+			string code = @"
+function ResolveMaxResults(int maxResults) : int
+{
+	return maxResults > 0 ? maxResults : 50;
+}
+
+function main() : int
+{
+	return ResolveMaxResults(10);
+}
+";
+
+			object? result = RunMain(code);
+			Assert.IsTrue(result is int);
+			Assert.AreEqual(10, (int)result);
+		}
+
 		// Purpose: Ensure the non-selected ternary branch is not evaluated.
 		[TestMethod]
 		public void Ternary_ShortCircuit_DoesNotEvaluateUnselectedBranch()

@@ -119,6 +119,83 @@ function main() : string
 			Assert.AreEqual("Deploy-A", result);
 		}
 
+		[TestMethod]
+		public void DotNetJsonObject_IndexerAssignment_WithTernaryInt_StoresSelectedInteger()
+		{
+			string code = @"
+reference BasicUtilities BasicUtilities;
+import BasicUtilities BasicUtilities.JsonObject JsonObject;
+
+function main() : string
+{
+	int maxResults = 10;
+	JsonObject args = new JsonObject();
+	args[""maxResults""] = maxResults > 0 ? maxResults : 50;
+	return args.ToString();
+}
+";
+
+			Compiler compiler = new Compiler();
+			compiler.Initialize();
+			ProtoScript.File file = ProtoScript.Parsers.Files.ParseFileContents(code);
+			ProtoScript.Interpretter.Compiled.File compiled = compiler.Compile(file);
+
+			Assert.AreEqual(
+				0,
+				compiler.Diagnostics.Count,
+				string.Join("\n", compiler.Diagnostics.Select(d => d.Diagnostic?.Message ?? "(null)")));
+
+			NativeInterpretter interpretter = new NativeInterpretter(compiler);
+			interpretter.Evaluate(compiled);
+			object? result = interpretter.RunMethodAsObject(null, "main", new List<object>());
+			string json = result?.ToString() ?? string.Empty;
+			Assert.IsTrue(json.Contains("\"maxResults\":10"), json);
+			Assert.IsFalse(json.Contains("\"maxResults\":true", StringComparison.OrdinalIgnoreCase), json);
+		}
+
+		[TestMethod]
+		public void MethodIntParameter_IfComparisonAndJsonObjectAssignment_StoresInteger()
+		{
+			string code = @"
+reference BasicUtilities BasicUtilities;
+import BasicUtilities BasicUtilities.JsonObject JsonObject;
+
+function Search(int maxResults) : string
+{
+	JsonObject args = new JsonObject();
+	int resolvedMaxResults = maxResults;
+	if (resolvedMaxResults <= 0)
+	{
+		resolvedMaxResults = 50;
+	}
+	args[""maxResults""] = resolvedMaxResults;
+	return args.ToString();
+}
+
+function main() : string
+{
+	return Search(10);
+}
+";
+
+			Compiler compiler = new Compiler();
+			compiler.Initialize();
+			ProtoScript.File file = ProtoScript.Parsers.Files.ParseFileContents(code);
+			ProtoScript.Interpretter.Compiled.File compiled = compiler.Compile(file);
+
+			Assert.AreEqual(
+				0,
+				compiler.Diagnostics.Count,
+				string.Join("\n", compiler.Diagnostics.Select(d => d.Diagnostic?.Message ?? "(null)")));
+
+			NativeInterpretter interpretter = new NativeInterpretter(compiler);
+			interpretter.Evaluate(compiled);
+			object? result = interpretter.RunMethodAsObject(null, "main", new List<object>());
+			string json = result?.ToString() ?? string.Empty;
+			Assert.IsTrue(json.Contains("\"maxResults\":10"), json);
+			Assert.IsFalse(json.Contains("\"maxResults\":true", StringComparison.OrdinalIgnoreCase), json);
+		}
+
 		private static Compiler CreateCompilerWithType(string typeAlias, System.Type type)
 		{
 			Compiler compiler = new Compiler();

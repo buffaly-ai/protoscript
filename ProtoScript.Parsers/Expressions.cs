@@ -1,4 +1,4 @@
-﻿using System.Text;
+using System.Text;
 
 namespace ProtoScript.Parsers
 {
@@ -271,6 +271,19 @@ throw;
 		{
 			switch (strOp)
 			{
+				case "=":
+				case "+=":
+				case "-=":
+				case "*=":
+				case "/=":
+				case "%=":
+				case "&=":
+				case "|=":
+				case "^=":
+				case "<<=":
+				case ">>=":
+					return 6;
+
 				case ".":
 				case "[]":
 					return 1;		
