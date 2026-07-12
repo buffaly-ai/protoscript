@@ -3593,7 +3593,7 @@ import Ontology.Simulation Ontology.Simulation.BoolWrapper Boolean;
 
 				try
 				{
-					Assembly loadedDependency = Assembly.LoadFrom(shadowDependencyPath);
+					Assembly loadedDependency = Assembly.LoadFile(shadowDependencyPath);
 					loadedAssemblies[dependencyFingerprint] = loadedDependency;
 					Logs.DebugLog.WriteEvent("AssemblyLoad.LoadedLocation", loadedDependency.Location);
 					return loadedDependency;
@@ -3617,7 +3617,7 @@ import Ontology.Simulation Ontology.Simulation.BoolWrapper Boolean;
 			{
 				try
 				{
-					Assembly loadedAssembly = Assembly.LoadFrom(shadowEntryPath);
+					Assembly loadedAssembly = Assembly.LoadFile(shadowEntryPath);
 					loadedAssemblies[fingerprint] = loadedAssembly;
 					Logs.DebugLog.WriteEvent("AssemblyLoad.LoadedLocation", loadedAssembly.Location);
 					loadResolution = "load-from-shadow";

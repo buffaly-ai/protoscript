@@ -8,6 +8,7 @@ using ProtoScript.Interpretter.Interpretting;
 using ProtoScript.Interpretter.RuntimeInfo;
 using ProtoScript.Interpretter.Symbols;
 using System;
+using System.Threading;
 
 namespace ProtoScript.Interpretter
 {
@@ -44,6 +45,7 @@ namespace ProtoScript.Interpretter
 	public class NativeInterpretter
 	{
 		private class UninitializedReturn { }
+		private int m_isRunningEntryPoint;
 		private sealed class DotNetIndexSetterInfo
 		{
 			public object Target;
@@ -2170,6 +2172,21 @@ namespace ProtoScript.Interpretter
 		}
 
 		public object? RunMethod(FunctionRuntimeInfo infoFunc, object objInstance, List<object> lstParameters)
+		{
+			if (Interlocked.Exchange(ref m_isRunningEntryPoint, 1) == 1)
+				throw new InvalidOperationException("NativeInterpretter does not support concurrent entry-point execution. Create a separate interpreter instance per concurrent call.");
+
+			try
+			{
+				return RunMethodCore(infoFunc, objInstance, lstParameters);
+			}
+			finally
+			{
+				Volatile.Write(ref m_isRunningEntryPoint, 0);
+			}
+		}
+
+		private object? RunMethodCore(FunctionRuntimeInfo infoFunc, object objInstance, List<object> lstParameters)
 		{
 			if (LogMethodCalls)
 			{

@@ -97,7 +97,7 @@ reference ""{parsersAssemblyPath}"" AliasB;
 		}
 
 		[TestMethod]
-		public void CompileReferencePath_UsesAlreadyLoadedAssemblyByIdentity()
+		public void CompileReferencePath_LoadsCopiedSameIdentityAssemblyFromShadowPath()
 		{
 			string sourceAssemblyPath = typeof(Files).Assembly.Location;
 			string tempDir = Path.Combine(Path.GetTempPath(), "ProtoScriptRefIdentity_" + Guid.NewGuid().ToString("N"));
@@ -118,7 +118,10 @@ import CopiedAsm ProtoScript.Parsers.Files FilesParser;
 
 				Assert.AreEqual(0, compiler.Diagnostics.Count);
 				Assert.IsTrue(compiler.References.TryGetValue("CopiedAsm", out object? loadedObj));
-				Assert.AreSame(typeof(Files).Assembly, loadedObj as Assembly);
+				Assembly loadedAssembly = loadedObj as Assembly ?? throw new AssertFailedException("CopiedAsm did not load as an Assembly.");
+				Assert.AreEqual(typeof(Files).Assembly.GetName().Name, loadedAssembly.GetName().Name);
+				Assert.AreNotSame(typeof(Files).Assembly, loadedAssembly);
+				Assert.AreNotEqual(Path.GetFullPath(copiedAssemblyPath), Path.GetFullPath(loadedAssembly.Location));
 				ReferenceAssemblyInfo? info = compiler
 					.GetReferenceAssemblyInfos()
 					.FirstOrDefault(x => x.Alias == "CopiedAsm");
