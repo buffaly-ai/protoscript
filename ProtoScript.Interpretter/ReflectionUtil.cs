@@ -1,4 +1,4 @@
-﻿using Ontology.Simulation;
+using Ontology.Simulation;
 using System;
 using System.Reflection;
 
@@ -26,6 +26,16 @@ namespace ProtoScript.Interpretter
 				(System.Type w, System.Type p) when w == typeof(BoolWrapper) && p == typeof(bool) => true,
 				_ => false
 			};
+
+		private static bool IsSameTypeIdentityAcrossLoadContexts(System.Type argType, System.Type destinationType)
+		{
+			if (!string.Equals(argType.FullName, destinationType.FullName, StringComparison.Ordinal))
+				return false;
+
+			AssemblyName argAssembly = argType.Assembly.GetName();
+			AssemblyName destinationAssembly = destinationType.Assembly.GetName();
+			return string.Equals(argAssembly.Name, destinationAssembly.Name, StringComparison.OrdinalIgnoreCase);
+		}
 
 		private static bool IsParamArray(ParameterInfo[] parameters)
 		{
@@ -70,6 +80,12 @@ namespace ProtoScript.Interpretter
 
 			if (argType == destinationType)
 				return true;
+
+			if (IsSameTypeIdentityAcrossLoadContexts(argType, destinationType))
+			{
+				score = 1;
+				return true;
+			}
 
 			System.Type? nullableUnderlying = Nullable.GetUnderlyingType(destinationType);
 			if (nullableUnderlying != null)

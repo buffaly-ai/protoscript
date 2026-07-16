@@ -16,3 +16,7 @@
 - Updated dotnet `new` compilation to bucket initializer entries by kind during lowering: named member assignments map into `DotNetNewInstance.MemberInitializers`, and collection-style entries map into `DotNetNewInstance.CollectionInitializers`.
 - Design Decision: keep initializer lowering explicit and typed in `DotNetNewInstance` rather than rejecting collection entries at compile time, so runtime can apply deterministic initializer semantics.
 - Note: this trimmed feature pass is scoped to member + collection entry lowering for dotnet `new` object creation.
+
+## Preserve Host Type Identity During Shadow Loading (2026-07-15)
+- Reuse an already loaded assembly when a file reference has the same assembly identity and exact file hash.
+- Design Decision: unchanged host contracts must retain the default load-context type identity, while changed same-version DLLs continue through shadow loading for hot reload.

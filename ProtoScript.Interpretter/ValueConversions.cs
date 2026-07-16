@@ -17,6 +17,37 @@ namespace ProtoScript.Interpretter
 	/// </summary>
 	public static class ValueConversions
 	{
+		private static bool IsSameClrTypeIdentity(System.Type sourceType, System.Type targetType)
+		{
+			if (!string.Equals(sourceType.FullName, targetType.FullName, StringComparison.Ordinal))
+				return false;
+
+			return string.Equals(sourceType.Assembly.GetName().Name, targetType.Assembly.GetName().Name, StringComparison.OrdinalIgnoreCase);
+		}
+
+		private static bool IsAssignableAcrossLoadContexts(System.Type sourceType, System.Type targetType)
+		{
+			if (IsSameClrTypeIdentity(sourceType, targetType))
+				return true;
+
+			foreach (System.Type sourceInterface in sourceType.GetInterfaces())
+			{
+				if (IsSameClrTypeIdentity(sourceInterface, targetType))
+					return true;
+			}
+
+			System.Type? sourceBaseType = sourceType.BaseType;
+			while (sourceBaseType != null)
+			{
+				if (IsSameClrTypeIdentity(sourceBaseType, targetType))
+					return true;
+
+				sourceBaseType = sourceBaseType.BaseType;
+			}
+
+			return false;
+		}
+
 		/// <summary>
 		/// Attempts to convert a runtime value to the requested CLR type.
 		/// Returns <c>null</c> when no safe conversion exists.
@@ -31,7 +62,7 @@ namespace ProtoScript.Interpretter
 			if (unwrapped == null)
 				return null;
 
-			if (targetType.IsAssignableFrom(unwrapped.GetType()))
+			if (targetType.IsAssignableFrom(unwrapped.GetType()) || IsAssignableAcrossLoadContexts(unwrapped.GetType(), targetType))
 				return unwrapped;
 
 			if (unwrapped is StringReference stringReference)
@@ -154,7 +185,7 @@ namespace ProtoScript.Interpretter
 			System.Type targetType = targetTypeInfo.Type;
 			System.Type effectiveType = System.Nullable.GetUnderlyingType(targetType) ?? targetType;
 
-			if (effectiveType.IsAssignableFrom(unwrapped.GetType()))
+			if (effectiveType.IsAssignableFrom(unwrapped.GetType()) || IsAssignableAcrossLoadContexts(unwrapped.GetType(), effectiveType))
 			{
 				converted = unwrapped;
 				return true;
@@ -257,7 +288,7 @@ namespace ProtoScript.Interpretter
 			if (infoSource.Type == infoTarget.Type)
 				return true;
 
-			if (infoTarget.Type.IsAssignableFrom(infoSource.Type))
+			if (infoTarget.Type.IsAssignableFrom(infoSource.Type) || IsAssignableAcrossLoadContexts(infoSource.Type, infoTarget.Type))
 				return true;
 
 			if (infoTarget.Type.GetConstructor(new[] { infoSource.Type }) != null)

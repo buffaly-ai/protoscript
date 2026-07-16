@@ -3552,6 +3552,14 @@ import Ontology.Simulation Ontology.Simulation.BoolWrapper Boolean;
 			if (!System.IO.File.Exists(fullPath))
 				throw new FileNotFoundException("Assembly path not found.", fullPath);
 
+			if (TryGetLoadedAssemblyByIdentityAndFileHash(fullPath, out Assembly? loadedByIdentityAndHash))
+			{
+				loadedAssemblies[fingerprint] = loadedByIdentityAndHash;
+				Logs.DebugLog.WriteEvent("AssemblyLoad.CacheHit", "reason=assembly-identity-file-hash");
+				loadResolution = "assembly-identity-file-hash";
+				return loadedByIdentityAndHash;
+			}
+
 			string sourceDirectory = Path.GetDirectoryName(fullPath) ?? string.Empty;
 			string shadowDirectory = PrepareShadowCopyDirectory(fullPath);
 			string shadowEntryPath = Path.Combine(shadowDirectory, Path.GetFileName(fullPath));
@@ -3583,6 +3591,13 @@ import Ontology.Simulation Ontology.Simulation.BoolWrapper Boolean;
 					loadedAssemblies[dependencyFingerprint] = loadedDependencyByLocation;
 					Logs.DebugLog.WriteEvent("AssemblyLoad.CacheHit", "reason=exact-location");
 					return loadedDependencyByLocation;
+				}
+
+				if (TryGetLoadedAssemblyByIdentityAndFileHash(dependencyFullPath, out Assembly? loadedDependencyByIdentityAndHash))
+				{
+					loadedAssemblies[dependencyFingerprint] = loadedDependencyByIdentityAndHash;
+					Logs.DebugLog.WriteEvent("AssemblyLoad.CacheHit", "reason=assembly-identity-file-hash");
+					return loadedDependencyByIdentityAndHash;
 				}
 
 				string shadowDependencyPath = Path.Combine(shadowDirectory, requestedName.Name + ".dll");
@@ -3838,6 +3853,37 @@ import Ontology.Simulation Ontology.Simulation.BoolWrapper Boolean;
 				{
 					// Ignore dynamic or inaccessible assemblies and continue scanning.
 				}
+			}
+
+			assembly = null;
+			return false;
+		}
+
+		private static bool TryGetLoadedAssemblyByIdentityAndFileHash(string requestedFullPath, out Assembly? assembly)
+		{
+			try
+			{
+				AssemblyName requestedName = AssemblyName.GetAssemblyName(requestedFullPath);
+				byte[] requestedHash = System.Security.Cryptography.SHA256.HashData(System.IO.File.ReadAllBytes(requestedFullPath));
+				foreach (Assembly loaded in AppDomain.CurrentDomain.GetAssemblies())
+				{
+					if (string.IsNullOrWhiteSpace(loaded.Location)
+						|| !AssemblyName.ReferenceMatchesDefinition(requestedName, loaded.GetName()))
+					{
+						continue;
+					}
+
+					byte[] loadedHash = System.Security.Cryptography.SHA256.HashData(System.IO.File.ReadAllBytes(loaded.Location));
+					if (requestedHash.AsSpan().SequenceEqual(loadedHash))
+					{
+						assembly = loaded;
+						return true;
+					}
+				}
+			}
+			catch
+			{
+				// Fall through to shadow loading when identity or file metadata cannot be inspected.
 			}
 
 			assembly = null;

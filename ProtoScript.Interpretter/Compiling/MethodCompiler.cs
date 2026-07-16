@@ -1,4 +1,4 @@
-﻿using BasicUtilities;
+using BasicUtilities;
 using Ontology;
 using ProtoScript.Diagnostics;
 using ProtoScript.Interpretter.Compiled;
@@ -205,8 +205,9 @@ namespace ProtoScript.Interpretter.Compiling
 				for (int i = 0; i < receiverTypes.Count; i++)
 				{
 					System.Type receiverType = receiverTypes[i];
-					method = receiverType.GetMethod(strMethod);
-					if (null != method)
+					bool methodNameExists = receiverType.GetMethods(System.Reflection.BindingFlags.Public | System.Reflection.BindingFlags.Static | System.Reflection.BindingFlags.Instance)
+						.Any(x => x.Name == strMethod);
+					if (methodNameExists)
 					{
 						compiler.AddDiagnostic(
 							new Diagnostic($"Method {strMethod} exists but parameters don't match"),

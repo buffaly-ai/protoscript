@@ -114,6 +114,29 @@ namespace ProtoScript.Tests
 		}
 
 		[TestMethod]
+		public void LoadAssemblyFromResolvedPath_ExactCopyOfLoadedAssembly_ReusesLoadedTypeIdentity()
+		{
+			string tempDir = Path.Combine(Path.GetTempPath(), "ProtoScript_LoadedAssemblyIdentity_" + Guid.NewGuid().ToString("N"));
+			Directory.CreateDirectory(tempDir);
+			try
+			{
+				Assembly loadedAssembly = typeof(Compiler).Assembly;
+				string copiedAssemblyPath = Path.Combine(tempDir, Path.GetFileName(loadedAssembly.Location));
+				System.IO.File.Copy(loadedAssembly.Location, copiedAssemblyPath, true);
+
+				Assembly resolvedAssembly = InvokeLoadAssemblyFromResolvedPath(copiedAssemblyPath);
+
+				Assert.AreSame(loadedAssembly, resolvedAssembly,
+					"An unchanged host assembly copy must reuse the default loaded assembly so injected runtime interfaces retain one type identity.");
+			}
+			finally
+			{
+				if (Directory.Exists(tempDir))
+					Directory.Delete(tempDir, true);
+			}
+		}
+
+		[TestMethod]
 		public void CompileAndRun_AfterSameProcessResetAndNativeDllChange_DoesNotKeepNullFromOldAssembly()
 		{
 			string tempDir = Path.Combine(Path.GetTempPath(), "ProtoScript_ResetNativeNull_" + Guid.NewGuid().ToString("N"));
