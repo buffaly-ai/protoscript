@@ -121,3 +121,6 @@ test-output*.log
 **/artifacts/
 **/publish/
 **/bin/Release/**/publish/
+# Generated runtime/library payloads are build outputs, not source.
+/lib/
+/buffaly.agent.worker/lib/
