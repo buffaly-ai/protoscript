@@ -386,13 +386,14 @@ namespace ProtoScript.Interpretter.Symbols
 			}
 			else if (typeInfo is DotNetTypeInfo)
 			{
-				DotNetTypeInfo dotNetTypeInfo = (DotNetTypeInfo)typeInfo;
+				DotNetTypeInfo dotNetTypeInfo = (DotNetTypeInfo)typeInfo.Clone();
 				if (dotNetTypeInfo.Type.IsGenericTypeDefinition)
 				{
 					System.Type[] typeElements = type.ElementTypes.Select(t => GetTypeInfo(t)?.Type ?? throw new InvalidOperationException($"Could not resolve type info for generic argument '{t.TypeName}' while binding '{type.TypeName}'.")).ToArray();
 
 					dotNetTypeInfo.Type = dotNetTypeInfo.Type.MakeGenericType(typeElements);
 				}
+				typeInfo = dotNetTypeInfo;
 
 			}
 

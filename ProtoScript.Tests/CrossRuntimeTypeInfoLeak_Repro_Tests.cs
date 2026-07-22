@@ -71,6 +71,24 @@ prototype {prototypeName}
 		}
 
 		[TestMethod]
+		public void DotNetGenericTypeResolution_DoesNotMutateSharedGenericDefinition()
+		{
+			Compiler compiler = new Compiler();
+			compiler.Initialize();
+			DotNetTypeInfo sharedListDefinition = new DotNetTypeInfo(typeof(List<>));
+			compiler.Symbols.InsertSymbol("TestGenericList", sharedListDefinition);
+
+			ProtoScript.Type stringListSyntax = ProtoScript.Parsers.Types.Parse("TestGenericList<string>");
+			ProtoScript.Type intListSyntax = ProtoScript.Parsers.Types.Parse("TestGenericList<int>");
+			DotNetTypeInfo stringList = (DotNetTypeInfo)compiler.Symbols.GetTypeInfo(stringListSyntax)!;
+			DotNetTypeInfo intList = (DotNetTypeInfo)compiler.Symbols.GetTypeInfo(intListSyntax)!;
+
+			Assert.AreEqual(typeof(List<string>), stringList.Type);
+			Assert.AreEqual(typeof(List<int>), intList.Type);
+			Assert.IsTrue(sharedListDefinition.Type.IsGenericTypeDefinition, "Resolving a closed generic must not mutate the shared List<> symbol.");
+		}
+
+		[TestMethod]
 		public void EvaluateGetStack_ForeignScope_ThrowsExplicitRuntimeError()
 		{
 			Compiler compiler1 = BuildCompiler(@"
