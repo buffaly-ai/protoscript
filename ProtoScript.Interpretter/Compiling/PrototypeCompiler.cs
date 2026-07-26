@@ -624,8 +624,16 @@ namespace ProtoScript.Interpretter.Compiling
 
 						if (!ReflectionUtil.HasBaseType(infoType.Type, typeof(Prototype)))
 						{
-							compiler.AddDiagnostic(new Diagnostic("Prototype property types must inherit from Prototype"), fieldDefinition, fieldDefinition.Type);
-							return null;
+							string resolvedTypeName = infoType.Type?.AssemblyQualifiedName ?? "(unknown)";
+							string resolvedBaseTypeName = infoType.Type?.BaseType?.AssemblyQualifiedName ?? "(none)";
+							compiler.AddDiagnostic(
+								new Diagnostic(
+									$"Prototype property type '{fieldDefinition.Type?.TypeName}' resolved to '{resolvedTypeName}' "
+									+ $"with base type '{resolvedBaseTypeName}', but property types must inherit from "
+									+ $"'{typeof(Prototype).AssemblyQualifiedName}'."),
+								fieldDefinition,
+								fieldDefinition.Type);
+							continue;
 						}
 
 						//For interpreter 
