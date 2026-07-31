@@ -1,4 +1,5 @@
 using ProtoScript.Parsers;
+using ProtoScript.Interpretter;
 
 namespace ProtoScript.Tests
 {
@@ -11,6 +12,57 @@ namespace ProtoScript.Tests
 			ProtoScript.IncludeStatement statement = IncludeStatements.Parse("include \"Critic/CriticOps.pts\";");
 			Assert.AreEqual("Critic/CriticOps.pts", statement.FileName);
 			Assert.IsFalse(statement.Recursive);
+			Assert.IsFalse(statement.Lazy);
+		}
+
+		[TestMethod]
+		public void ParseIncludeStatement_WithLazyQuotedPath_Succeeds()
+		{
+			ProtoScript.IncludeStatement statement = IncludeStatements.Parse("include lazy \"Skills/FFmpeg/index.pts\";");
+
+			Assert.AreEqual("Skills/FFmpeg/index.pts", statement.FileName);
+			Assert.IsTrue(statement.Lazy);
+			Assert.IsFalse(statement.Recursive);
+		}
+
+		[TestMethod]
+		public void ParseIncludeStatement_WithLazyRecursive_ThrowsHelpfulError()
+		{
+			ProtoScriptParsingException err = Assert.ThrowsException<ProtoScriptParsingException>(() =>
+				IncludeStatements.Parse("include lazy recursive \"Skills/**/*.pts\";"));
+
+			Assert.AreEqual("non-recursive lazy include", err.Expected);
+			Assert.IsTrue(err.Explanation?.Contains("cannot be recursive", StringComparison.OrdinalIgnoreCase) ?? false);
+		}
+
+		[DataTestMethod]
+		[DataRow(false)]
+		[DataRow(true)]
+		public void CompileProject_WithLazyInclude_RecordsDeclarationWithoutParsingTarget(bool allowParallelism)
+		{
+			string tempDirectory = Path.Combine(Path.GetTempPath(), "ProtoScriptLazyIncludeTests", Guid.NewGuid().ToString("N"));
+			Directory.CreateDirectory(tempDirectory);
+			string projectPath = Path.Combine(tempDirectory, "Project.pts");
+			string missingModulePath = Path.Combine(tempDirectory, "MissingSkill", "index.pts");
+			string prototypeName = "LazyTraversalRoot_" + Guid.NewGuid().ToString("N");
+			System.IO.File.WriteAllText(projectPath, $"include lazy \"MissingSkill/index.pts\";{Environment.NewLine}prototype {prototypeName};");
+
+			try
+			{
+				Compiler compiler = new Compiler { AllowParallelism = allowParallelism };
+				compiler.Initialize();
+				compiler.CompileProject(projectPath);
+
+				Assert.AreEqual(1, compiler.Files.Count);
+				Assert.AreEqual(1, compiler.LazyIncludeDeclarations.Count);
+				Assert.AreEqual(Path.GetFullPath(projectPath), compiler.LazyIncludeDeclarations[0].SourceFilePath);
+				Assert.AreEqual(Path.GetFullPath(missingModulePath), compiler.LazyIncludeDeclarations[0].ModuleFilePath);
+				Assert.AreEqual(Path.GetFullPath(projectPath), compiler.LazyIncludeDeclarations[0].SourceInfo.File);
+			}
+			finally
+			{
+				Directory.Delete(tempDirectory, recursive: true);
+			}
 		}
 
 		[TestMethod]

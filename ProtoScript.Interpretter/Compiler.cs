@@ -26,6 +26,12 @@ namespace ProtoScript.Interpretter
 			return $"CompilerDiagnostic: {Diagnostic} at {Statement?.Info?.ToString() ?? "unknown"}";
 		}
 	}
+	public sealed class LazyIncludeDeclaration
+	{
+		public string SourceFilePath { get; init; } = string.Empty;
+		public string ModuleFilePath { get; init; } = string.Empty;
+		public StatementParsingInfo SourceInfo { get; init; } = new StatementParsingInfo();
+	}
 	public class Compiler
 	{
 		public enum CompilationMode
@@ -41,6 +47,7 @@ namespace ProtoScript.Interpretter
 		public List<string> DisabledFiles = new List<string>();
 		public string Source = string.Empty;
 		public List<File> Files = new List<File>();
+		public List<LazyIncludeDeclaration> LazyIncludeDeclarations { get; } = new List<LazyIncludeDeclaration>();
 		public bool AllowParallelism = false;
 		public CompilationMode ProjectCompilationMode { get; set; } = CompilationMode.Strict;
 		private static readonly Dictionary<string, Assembly> s_assemblyPathCache =
@@ -180,7 +187,8 @@ import Ontology.Simulation Ontology.Simulation.BoolWrapper Boolean;
 						: err.Message;
 
 					includeParseFailures.TryAdd(path, explanation);
-				});
+				},
+				RegisterLazyInclude);
 			lstFiles.Remove(file);
 			lstFiles.Insert(0, file);
 
@@ -225,7 +233,8 @@ import Ontology.Simulation Ontology.Simulation.BoolWrapper Boolean;
 						: err.Message;
 
 					includeParseFailures.TryAdd(path, explanation);
-				}));
+				},
+				RegisterLazyInclude));
 
 			if (bIgnoreIncludeErrors)
 			{
@@ -247,13 +256,36 @@ import Ontology.Simulation Ontology.Simulation.BoolWrapper Boolean;
 			return statements;
 		}
 
+		public List<Compiled.Statement> CompileAndAppendModule(string strFilePath)
+		{
+			File moduleFile = ProtoScript.Parsers.Files.Parse(strFilePath);
+			List<File> moduleFiles = new List<File> { moduleFile };
+			moduleFiles.AddRange(GetAllIncludedFiles(
+				moduleFile,
+				AllowParallelism,
+				false,
+				null,
+				RegisterLazyInclude));
 
-		protected List<Compiled.Statement> CompileFileList(List<File> lstFiles)
+			List<File> newFiles = moduleFiles
+				.Where(candidate => !Files.Any(existing => StringUtil.EqualNoCase(existing.Info?.FullName ?? string.Empty, candidate.Info?.FullName ?? string.Empty)))
+				.ToList();
+			if (newFiles.Count == 0)
+				return new List<Compiled.Statement>();
+
+			return CompileFileList(newFiles, appendFiles: true);
+		}
+
+
+		protected List<Compiled.Statement> CompileFileList(List<File> lstFiles, bool appendFiles = false)
 		{
 			Logs.DebugLog.CreateTimer("CompileProject.CompileFileList");
 
 			Compiler compiler = this;
-			compiler.Files = lstFiles;
+			if (appendFiles)
+				compiler.Files.AddRange(lstFiles);
+			else
+				compiler.Files = lstFiles;
 			File? currentFile = null;
 			string currentStage = "initialization";
 
@@ -261,7 +293,8 @@ import Ontology.Simulation Ontology.Simulation.BoolWrapper Boolean;
 			{
 				List<Compiled.Statement> lstStatements = new List<Compiled.Statement>();
 				List<File> activeFiles = new List<File>(lstFiles);
-				DisabledFiles.Clear();
+				if (!appendFiles)
+					DisabledFiles.Clear();
 
 				bool TrySkipFailedFile(File fileCurrent, string explanation)
 				{
@@ -467,18 +500,19 @@ import Ontology.Simulation Ontology.Simulation.BoolWrapper Boolean;
 			File file,
 			bool bAllowParallelism,
 			bool bIgnoreErrors = false,
-			Action<string, Exception>? includeParseFailureHandler = null)
+			Action<string, Exception>? includeParseFailureHandler = null,
+			Action<File, IncludeStatement, string>? lazyIncludeHandler = null)
 		{
 			List<File> lstFiles = new List<File>();
 
 			//Note: testing shows parallelism has no effect on performance.
 			if (bAllowParallelism)
 			{
-				GetIncludedFilesRecursive(file, lstFiles, bIgnoreErrors, includeParseFailureHandler);
+				GetIncludedFilesRecursive(file, lstFiles, bIgnoreErrors, includeParseFailureHandler, lazyIncludeHandler);
 			}
 			else
 			{
-				GetIncludedFiles(file, lstFiles, bIgnoreErrors, includeParseFailureHandler);
+				GetIncludedFiles(file, lstFiles, bIgnoreErrors, includeParseFailureHandler, lazyIncludeHandler);
 			}
 
 			return lstFiles;
@@ -489,7 +523,8 @@ import Ontology.Simulation Ontology.Simulation.BoolWrapper Boolean;
 			File file,
 			List<File> lstFiles,
 			bool bIgnoreErrors,
-			Action<string, Exception>? includeParseFailureHandler)
+			Action<string, Exception>? includeParseFailureHandler,
+			Action<File, IncludeStatement, string>? lazyIncludeHandler)
 		{
 			//TODO: Doesn't currently work because the order of defining prototypes still matters.
 
@@ -517,6 +552,12 @@ import Ontology.Simulation Ontology.Simulation.BoolWrapper Boolean;
 
 					foreach (IncludeStatement inc in fileCurrent.Includes)
 					{
+						if (inc.Lazy)
+						{
+							lazyIncludeHandler?.Invoke(fileCurrent, inc, BuildIncludePath(rootDir, inc.FileName));
+							continue;
+						}
+
 						IEnumerable<string> paths =
 						inc.FileName.Contains('*')
 						? Directory.GetFiles(rootDir,
@@ -560,12 +601,19 @@ import Ontology.Simulation Ontology.Simulation.BoolWrapper Boolean;
 			File file,
 			List<File> lstFiles,
 			bool bIgnoreErrors,
-			Action<string, Exception>? includeParseFailureHandler)
+			Action<string, Exception>? includeParseFailureHandler,
+			Action<File, IncludeStatement, string>? lazyIncludeHandler)
 		{
 			string strRootDir = GetFileDirectory(file);
 
 			foreach (IncludeStatement include in file.Includes)
 			{
+				if (include.Lazy)
+				{
+					lazyIncludeHandler?.Invoke(file, include, BuildIncludePath(strRootDir, include.FileName));
+					continue;
+				}
+
 				if (include.FileName.Contains("*"))
 				{
 					foreach (string strFile in Directory.GetFiles(strRootDir, include.FileName, include.Recursive ? SearchOption.AllDirectories : SearchOption.TopDirectoryOnly))
@@ -576,7 +624,7 @@ import Ontology.Simulation Ontology.Simulation.BoolWrapper Boolean;
 							if (!lstFiles.Any(x => StringUtil.EqualNoCase(x.Info.FullName, fileSub.Info.FullName)))
 							{
 								lstFiles.Add(fileSub);
-								GetIncludedFiles(fileSub, lstFiles, bIgnoreErrors, includeParseFailureHandler);
+								GetIncludedFiles(fileSub, lstFiles, bIgnoreErrors, includeParseFailureHandler, lazyIncludeHandler);
 							}
 							else
 							{
@@ -602,7 +650,7 @@ import Ontology.Simulation Ontology.Simulation.BoolWrapper Boolean;
 						if (!lstFiles.Any(x => StringUtil.EqualNoCase(x.Info.FullName, fileSub.Info.FullName)))
 						{
 							lstFiles.Add(fileSub);
-							GetIncludedFiles(fileSub, lstFiles, bIgnoreErrors, includeParseFailureHandler);
+							GetIncludedFiles(fileSub, lstFiles, bIgnoreErrors, includeParseFailureHandler, lazyIncludeHandler);
 						}
 						else
 						{
@@ -636,8 +684,22 @@ import Ontology.Simulation Ontology.Simulation.BoolWrapper Boolean;
 		static private string BuildIncludePath(string rootDirectory, string includeFileName)
 		{
 			if (Path.IsPathRooted(includeFileName))
-				return includeFileName;
-			return Path.Combine(rootDirectory, includeFileName);
+				return Path.GetFullPath(includeFileName);
+			return Path.GetFullPath(Path.Combine(rootDirectory, includeFileName));
+		}
+
+		private void RegisterLazyInclude(File sourceFile, IncludeStatement include, string moduleFilePath)
+		{
+			string canonicalModulePath = Path.GetFullPath(moduleFilePath);
+			if (LazyIncludeDeclarations.Any(x => StringUtil.EqualNoCase(x.ModuleFilePath, canonicalModulePath)))
+				return;
+
+			LazyIncludeDeclarations.Add(new LazyIncludeDeclaration
+			{
+				SourceFilePath = sourceFile.Info?.FullName ?? string.Empty,
+				ModuleFilePath = canonicalModulePath,
+				SourceInfo = include.Info
+			});
 		}
 
 

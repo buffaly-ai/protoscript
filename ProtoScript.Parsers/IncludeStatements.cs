@@ -32,9 +32,23 @@ namespace ProtoScript.Parsers
 
 			tok.MustBeNext("include");
 
+			if (tok.CouldBeNext("lazy"))
+			{
+				result.Lazy = true;
+			}
+
 			if (tok.CouldBeNext("recursive"))
 			{
 				result.Recursive = true;
+			}
+
+			if (result.Lazy && result.Recursive)
+			{
+				throw BuildPathLiteralException(
+					tok,
+					"include",
+					"non-recursive lazy include",
+					"Lazy includes require one stable module entry file and cannot be recursive.");
 			}
 
 			result.FileName = ParsePathLiteral(tok, "include");
