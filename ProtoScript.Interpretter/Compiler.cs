@@ -2949,12 +2949,13 @@ import Ontology.Simulation Ontology.Simulation.BoolWrapper Boolean;
 		{
 			List<Compiled.Statement> lstStatements = new List<Compiled.Statement>();
 
-			FunctionRuntimeInfo funcInfo = Symbols.ActiveScope().GetSymbol(funcDef.FunctionName) as FunctionRuntimeInfo;
+			FunctionRuntimeInfo funcInfo = Symbols.GetGlobalScope().GetSymbol(funcDef.FunctionName) as FunctionRuntimeInfo;
 
 			if (null == funcInfo)
 			{
 				this.AddDiagnostic(new Diagnostic("Could not find method: " + funcDef.FunctionName), funcDef, null);
-				return null;
+				// Preserve the compiler diagnostic without violating the collection contract expected by stage aggregation.
+				return lstStatements;
 			}
 
 

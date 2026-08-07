@@ -58,6 +58,48 @@ namespace ProtoScript.Tests
 		}
 
 		[TestMethod]
+		public void CompileAndAppendModule_AnnotatedFunctionWithNonGlobalActiveScope_CompilesColdLazyModule()
+		{
+			// Purpose: A cold lazy module must compile file-level annotations from global declarations regardless of incidental active scope.
+			string root = CreateTestRoot();
+			try
+			{
+				string projectPath = Write(root, "Project.pts", @"
+prototype SemanticProgram
+{
+	function InfinitivePhrase(Prototype action, string infinitive) : void
+	{
+	}
+}");
+				string modulePath = Write(root, "Skill/index.pts", @"
+[SemanticProgram.InfinitivePhrase(""to run a cold lazy action"")]
+function ColdLazyAction() : string
+{
+	return ""ok"";
+}");
+				Compiler compiler = new Compiler();
+				compiler.Initialize();
+				compiler.CompileProject(projectPath);
+				compiler.Symbols.EnterScope(new ProtoScript.Interpretter.Symbols.Scope(ProtoScript.Interpretter.Symbols.Scope.ScopeTypes.Method));
+
+				try
+				{
+					compiler.CompileAndAppendModule(modulePath);
+				}
+				finally
+				{
+					compiler.Symbols.LeaveScope();
+				}
+
+				Assert.IsFalse(
+					compiler.Diagnostics.Any(x =>
+						(x.Diagnostic?.Message ?? string.Empty).Contains("Could not find method: ColdLazyAction", StringComparison.Ordinal)),
+					"Expected cold lazy annotation compilation to resolve the globally declared function.");
+			}
+			finally { Directory.Delete(root, true); }
+		}
+
+		[TestMethod]
 		public void CompileAndAppendModule_WhenAlreadyTracked_ReturnsEmptyDelta()
 		{
 			string root = CreateTestRoot();

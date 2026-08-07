@@ -1,5 +1,10 @@
 # Compiler.cs Change History
 
+## Missing Function Annotation Collection Contract (2026-08-07)
+- Changed function-annotation compilation to return an empty statement list after emitting a missing-function diagnostic instead of returning `null`.
+- Resolve file-level function annotations from the global symbol scope where those functions are declared, rather than from incidental active compiler scope.
+- Design Decision: compilation stages aggregate statement collections with `AddRange`; a known diagnostic path must preserve that collection contract so strict lazy compilation reports the real missing-symbol diagnostic rather than throwing `ArgumentNullException(collection)`.
+
 ## Include Missing-File Diagnostics (2026-03-12)
 - Updated include-file parsing flow to carry include-site context into missing-file failures.
 - Design Decision: wrap missing include targets as `ProtoScriptCompilerException` with `IncludeStatement.Info` so callers receive file/offset for the failing include line instead of a contextless runtime error.

@@ -74,6 +74,60 @@ prototype ToRemoveGuidNamedBuffalySessions : SessionManagementSkillAction
 		}
 
 		[TestMethod]
+		public void CompileFunctionAnnotations_MissingFunctionSymbol_ReturnsEmptyStatementsWithDiagnostic()
+		{
+			// Purpose: Cold lazy compilation must preserve a missing-function diagnostic without returning a null collection to stage aggregation.
+			Compiler compiler = new Compiler();
+			compiler.Initialize();
+			ProtoScript.File file = Files.ParseFileContents(@"
+[SemanticProgram.InfinitivePhrase(""to run a missing function"")]
+function MissingFunction() : string
+{
+	return ""ok"";
+}");
+			FunctionDefinition function = file.Statements.OfType<FunctionDefinition>().Single();
+
+			List<ProtoScript.Interpretter.Compiled.Statement> statements = compiler.CompileFunctionAnnotations(function);
+
+			Assert.AreEqual(0, statements.Count);
+			Assert.IsTrue(
+				compiler.Diagnostics.Any(x =>
+					(x.Diagnostic?.Message ?? string.Empty).Contains("Could not find method: MissingFunction", StringComparison.Ordinal)),
+				"Expected the missing function symbol to remain an explicit compiler diagnostic.");
+		}
+
+		[TestMethod]
+		public void CompileFunctionAnnotations_NonGlobalActiveScope_ResolvesDeclaredGlobalFunction()
+		{
+			// Purpose: Cold lazy annotation compilation must resolve file-level functions from their authoritative global declaration scope.
+			Compiler compiler = new Compiler();
+			compiler.Initialize();
+			ProtoScript.File file = Files.ParseFileContents(@"
+[SemanticProgram.InfinitivePhrase(""to run a globally declared function"")]
+function GlobalFunction() : string
+{
+	return ""ok"";
+}");
+			FunctionDefinition function = file.Statements.OfType<FunctionDefinition>().Single();
+			compiler.DeclareFunction(function);
+			compiler.Symbols.EnterScope(new ProtoScript.Interpretter.Symbols.Scope(ProtoScript.Interpretter.Symbols.Scope.ScopeTypes.Method));
+
+			try
+			{
+				compiler.CompileFunctionAnnotations(function);
+
+				Assert.IsFalse(
+					compiler.Diagnostics.Any(x =>
+						(x.Diagnostic?.Message ?? string.Empty).Contains("Could not find method: GlobalFunction", StringComparison.Ordinal)),
+					"Expected annotation compilation to resolve the function from global scope.");
+			}
+			finally
+			{
+				compiler.Symbols.LeaveScope();
+			}
+		}
+
+		[TestMethod]
 		public void Compile_PrototypeInheritsFromString_ShowsValueTypeGuidance()
 		{
 			const string code = @"
