@@ -66,6 +66,37 @@
 		}
 
 		public Expression Right = null;
+		public bool IsPostfix = false;
+
+		public override IEnumerable<Expression> GetChildrenExpressions()
+		{
+			if (null != Right)
+			{
+				yield return Right;
+
+				foreach (Expression term in Right.GetChildrenExpressions())
+					yield return term;
+			}
+		}
+
+		public override string ToString()
+		{
+			return IsPostfix
+				? Right?.ToString() + Value
+				: Value + Right?.ToString();
+		}
+
+		public override Expression Clone()
+		{
+			return new UnaryOperator
+			{
+				Value = this.Value,
+				IsParenthesized = this.IsParenthesized,
+				Info = this.Info,
+				Right = this.Right?.Clone(),
+				IsPostfix = this.IsPostfix
+			};
+		}
 	}
 
 	public class BinaryOperator : Operator

@@ -114,7 +114,10 @@ namespace ProtoScript.Parsers
 
 				if ("++" == strTok || "--" == strTok) //unary postfix operator
 				{
-					term = new UnaryOperator(tok.getNextToken());
+					UnaryOperator op = new UnaryOperator(tok.getNextToken());
+					op.Right = term;
+					op.IsPostfix = true;
+					term = op;
 					strTok = tok.peekNextToken();
 				}
 

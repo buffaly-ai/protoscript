@@ -450,6 +450,35 @@ if (op.Value == "." || op.Value == "?.")
 				Write(op.Value ?? "#");
 		}
 
+		void ToString(UnaryOperator op)
+		{
+			if (op is IsInitializedOperator)
+			{
+				ToString(op as IsInitializedOperator);
+				return;
+			}
+
+			if (StringUtil.IsEmpty(op.Value))
+				throw new GenerateFailedException("Unary operator is missing its operator token");
+
+			if (null == op.Right)
+				throw new GenerateFailedException("Unary operator '" + op.Value + "' is missing its operand");
+
+			if (op.IsPostfix)
+			{
+				ToString(op.Right);
+				Write(op.Value);
+			}
+			else
+			{
+				Write(op.Value);
+				if (op.Value == "out" || op.Value == "ref" || op.Value == "await")
+					Write(" ");
+
+				ToString(op.Right);
+			}
+		}
+
 		void TermToString(Expression expression)
 		{
 			if (expression.IsParenthesized)
@@ -466,6 +495,9 @@ if (op.Value == "." || op.Value == "?.")
 
 			else if (expression is CastingOperator)
 				ToString(expression as CastingOperator);
+
+			else if (expression is UnaryOperator)
+				ToString(expression as UnaryOperator);
 
 			else if (expression is Operator)
 				ToString(expression as Operator);
