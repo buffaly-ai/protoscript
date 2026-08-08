@@ -1,5 +1,9 @@
 # Compiler.cs Change History
 
+## Cold Lazy Function Body Scope (2026-08-07)
+- Record the exact `FunctionRuntimeInfo` created for each parsed `FunctionDefinition` and use that declaration when compiling its body.
+- Design Decision: body compilation must not rebind by name because common prototype method names such as `Execute` are ambiguous, and an incidental caller scope during strict lazy activation must not select or hide a different declaration.
+
 ## Missing Function Annotation Collection Contract (2026-08-07)
 - Changed function-annotation compilation to return an empty statement list after emitting a missing-function diagnostic instead of returning `null`.
 - Resolve file-level function annotations from the global symbol scope where those functions are declared, rather than from incidental active compiler scope.

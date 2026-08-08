@@ -48,6 +48,7 @@ namespace ProtoScript.Interpretter
 		public string Source = string.Empty;
 		public List<File> Files = new List<File>();
 		public List<LazyIncludeDeclaration> LazyIncludeDeclarations { get; } = new List<LazyIncludeDeclaration>();
+		private readonly Dictionary<FunctionDefinition, FunctionRuntimeInfo> _functionDeclarations = new(ReferenceEqualityComparer.Instance);
 		public bool AllowParallelism = false;
 		public CompilationMode ProjectCompilationMode { get; set; } = CompilationMode.Strict;
 		private static readonly Dictionary<string, Assembly> s_assemblyPathCache =
@@ -2798,6 +2799,7 @@ import Ontology.Simulation Ontology.Simulation.BoolWrapper Boolean;
 			funcInfo.Index = Symbols.GlobalStack.Add(funcInfo);
 			funcInfo.Scope = new Scope(Scope.ScopeTypes.Method);
 			funcInfo.Scope.Stack.Add(null);       //return location
+			_functionDeclarations[funcDef] = funcInfo;
 
 			return CompileSignature(funcDef, funcInfo);
 		}
@@ -2805,7 +2807,7 @@ import Ontology.Simulation Ontology.Simulation.BoolWrapper Boolean;
 
 		public Compiled.Statement Compile(FunctionDefinition funcDef)
 		{
-			FunctionRuntimeInfo funcInfo = Symbols.ActiveScope().GetSymbol(funcDef.FunctionName) as FunctionRuntimeInfo;
+			_functionDeclarations.TryGetValue(funcDef, out FunctionRuntimeInfo funcInfo);
 
 			if (null == funcInfo)
 			{
@@ -2869,6 +2871,7 @@ import Ontology.Simulation Ontology.Simulation.BoolWrapper Boolean;
 			funcInfo.Index = Symbols.LocalStack.Add(funcInfo);
 			funcInfo.Scope = new Scope(Scope.ScopeTypes.Method);
 			funcInfo.Scope.Stack.Add(null);       //return location
+			_functionDeclarations[funcDef] = funcInfo;
 
 			PrototypeTypeInfo infoThis = Symbols.GetGlobalScope().GetSymbol(prototype.PrototypeName) as PrototypeTypeInfo;
 			ValueRuntimeInfo infoThisInstance = new ValueRuntimeInfo();

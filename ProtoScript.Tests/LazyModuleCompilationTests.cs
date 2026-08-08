@@ -1,4 +1,6 @@
 using ProtoScript.Interpretter;
+using ProtoScript.Interpretter.RuntimeInfo;
+using ProtoScript.Interpretter.Symbols;
 
 namespace ProtoScript.Tests
 {
@@ -58,9 +60,9 @@ namespace ProtoScript.Tests
 		}
 
 		[TestMethod]
-		public void CompileAndAppendModule_AnnotatedFunctionWithNonGlobalActiveScope_CompilesColdLazyModule()
+		public void CompileAndAppendModule_AnnotatedFunctionsWithNonGlobalActiveScope_CompileColdLazyBodies()
 		{
-			// Purpose: A cold lazy module must compile file-level annotations from global declarations regardless of incidental active scope.
+			// Purpose: Cold lazy declarations, bodies, parameters, helper calls, and annotations must ignore incidental caller scope.
 			string root = CreateTestRoot();
 			try
 			{
@@ -72,10 +74,32 @@ prototype SemanticProgram
 	}
 }");
 				string modulePath = Write(root, "Skill/index.pts", @"
-[SemanticProgram.InfinitivePhrase(""to run a cold lazy action"")]
-function ColdLazyAction() : string
+[SemanticProgram.InfinitivePhrase(""to run a cold lazy helper"")]
+function ColdLazyHelper(string value) : string
 {
-	return ""ok"";
+	return value + ""-helper"";
+}
+
+[SemanticProgram.InfinitivePhrase(""to run a cold lazy action"")]
+function ColdLazyAction(string input) : string
+{
+	return ColdLazyHelper(input);
+}
+
+prototype FirstColdLazyAction
+{
+	function Execute() : string
+	{
+		return ""first"";
+	}
+}
+
+prototype SecondColdLazyAction
+{
+	function Execute() : string
+	{
+		return ""second"";
+	}
 }");
 				Compiler compiler = new Compiler();
 				compiler.Initialize();
@@ -93,8 +117,19 @@ function ColdLazyAction() : string
 
 				Assert.IsFalse(
 					compiler.Diagnostics.Any(x =>
-						(x.Diagnostic?.Message ?? string.Empty).Contains("Could not find method: ColdLazyAction", StringComparison.Ordinal)),
-					"Expected cold lazy annotation compilation to resolve the globally declared function.");
+						(x.Diagnostic?.Message ?? string.Empty).Contains("Could not find", StringComparison.Ordinal)
+						|| (x.Diagnostic?.Message ?? string.Empty).Contains("Cannot find identifier", StringComparison.Ordinal)),
+					"Expected cold lazy declarations, parameters, helper calls, and annotations to resolve from global declarations.");
+				FunctionRuntimeInfo action = compiler.Symbols.GetGlobalScope().GetSymbol("ColdLazyAction") as FunctionRuntimeInfo;
+				Assert.IsNotNull(action, "Expected the cold lazy action declaration to remain globally callable.");
+				Assert.AreEqual(1, action.Parameters.Count);
+				Assert.IsTrue(action.Statements.Count > 0, "Expected the cold lazy action body to compile.");
+				FunctionRuntimeInfo helper = compiler.Symbols.GetGlobalScope().GetSymbol("ColdLazyHelper") as FunctionRuntimeInfo;
+				Assert.IsNotNull(helper, "Expected the same-module helper declaration to remain globally callable.");
+				Assert.IsTrue(helper.Statements.Count > 0, "Expected the same-module helper body to compile.");
+				NativeInterpretter interpreter = new NativeInterpretter(compiler);
+				Assert.AreEqual("first", Run(interpreter, compiler, "FirstColdLazyAction"));
+				Assert.AreEqual("second", Run(interpreter, compiler, "SecondColdLazyAction"));
 			}
 			finally { Directory.Delete(root, true); }
 		}
