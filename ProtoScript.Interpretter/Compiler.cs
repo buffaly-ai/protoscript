@@ -2484,6 +2484,12 @@ import Ontology.Simulation Ontology.Simulation.BoolWrapper Boolean;
 
 		public Compiled.Expression Compile(string strPath, Expression exp)
 		{
+			if (strPath == "True" || strPath == "False")
+			{
+				string lowercaseLiteral = strPath.ToLowerInvariant();
+				this.AddDiagnostic(new Diagnostic($"Boolean literal '{strPath}' must be lowercase. Use '{lowercaseLiteral}' instead."), null, exp);
+				return null;
+			}
 
 			//Lookup the multi-part identifier first, to support external prototype paths
 			{

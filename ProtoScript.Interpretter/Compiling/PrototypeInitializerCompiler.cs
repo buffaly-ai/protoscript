@@ -66,6 +66,11 @@ namespace ProtoScript.Interpretter.Compiling
 
 				// Compile RHS once, reuse
 				Compiled.Expression rhsCompiled = compiler.Compile(op.Right);
+				if (rhsCompiled == null)
+				{
+					compiler.AddDiagnostic(BuildUnresolvedInitializerRightSideDiagnostic(strPropertyName, op.Right), initializer, op.Right);
+					return null;
+				}
 
 				Compiled.Expression lhs;
 
@@ -155,6 +160,25 @@ namespace ProtoScript.Interpretter.Compiling
 				+ " with primary parent " + parentName
 				+ " in " + fileName
 				+ ". Check whether the field exists on the prototype inheritance chain or should be represented as an annotation.";
+		}
+
+		private static string BuildUnresolvedInitializerRightSideDiagnostic(string strPropertyName, Expression rightSide)
+		{
+			string expressionText = DescribeExpression(rightSide);
+			return "Cannot compile initializer right side for property " + strPropertyName
+				+ " from expression " + expressionText
+				+ ". Check for unresolved identifiers, invalid assignment RHS expressions, or literal casing errors.";
+		}
+
+		private static string DescribeExpression(Expression expression)
+		{
+			if (expression is Identifier identifier)
+				return identifier.Value;
+
+			if (expression is Literal literal)
+				return literal.Value;
+
+			return expression?.GetType().Name ?? "unknown";
 		}
 	}
 }

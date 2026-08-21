@@ -1,5 +1,9 @@
 # Compiler.cs Change History
 
+## Initializer RHS Diagnostics (2026-08-21)
+- Added an explicit diagnostic for capitalized boolean literal tokens `True` and `False`; ProtoScript boolean literals are lowercase `true` and `false`, so these tokens should not fall through as unresolved identifiers.
+- Design Decision: report literal-casing mistakes at identifier compilation time so initializer assignment failures surface an actionable language diagnostic instead of later producing a null compiled expression.
+
 ## Cold Lazy Function Body Scope (2026-08-07)
 - Record the exact `FunctionRuntimeInfo` created for each parsed `FunctionDefinition` and use that declaration when compiling its body.
 - Design Decision: body compilation must not rebind by name because common prototype method names such as `Execute` are ambiguous, and an incidental caller scope during strict lazy activation must not select or hide a different declaration.
