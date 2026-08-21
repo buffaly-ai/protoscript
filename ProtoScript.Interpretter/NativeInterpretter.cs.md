@@ -1,5 +1,9 @@
 # NativeInterpretter.cs Change History
 
+## Numeric Comparison Evaluation (2026-08-21)
+- Broadened comparison evaluation from integer coercion to numeric coercion for CLR primitive numeric operands, including double and decimal score-threshold comparisons.
+- Design Decision: runtime comparison semantics must match compiler acceptance so expressions like `topScore >= 0.5` execute directly instead of requiring callers to avoid non-integer thresholds.
+
 ## Return Type Coercion on External Invocation (2026-03-13)
 - Added declared return-type coercion in the external `RunMethod(...)` invocation path used by `RunMethodAsObject(...)`.
 - Design Decision: align external method execution with internal evaluation behavior so runtime return contracts (including `StringRef`) are enforced consistently.

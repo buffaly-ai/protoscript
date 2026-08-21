@@ -1744,21 +1744,21 @@ import Ontology.Simulation Ontology.Simulation.BoolWrapper Boolean;
 				return null;
 			}
 
-			if (!SimpleInterpretter.IsAssignableFrom(compiledLeft.InferredType, new TypeInfo(typeof(int))))
+			if (!IsSupportedComparisonOperand(compiledLeft.InferredType))
 			{
 				this.AddDiagnostic(
 					new Diagnostic(
-						$"Only integer comparisons supported for operator '{op.Value}', but left operand type is {DescribeType(compiledLeft.InferredType)}"),
+						$"Only numeric comparisons supported for operator '{op.Value}', but left operand type is {DescribeType(compiledLeft.InferredType)}"),
 					null,
 					op);
 				return null;
 			}
 
-			if (!SimpleInterpretter.IsAssignableFrom(compiledRight.InferredType, new TypeInfo(typeof(int))))
+			if (!IsSupportedComparisonOperand(compiledRight.InferredType))
 			{
 				this.AddDiagnostic(
 					new Diagnostic(
-						$"Only integer comparisons supported for operator '{op.Value}', but right operand type is {DescribeType(compiledRight.InferredType)}"),
+						$"Only numeric comparisons supported for operator '{op.Value}', but right operand type is {DescribeType(compiledRight.InferredType)}"),
 					null,
 					op);
 				return null;
@@ -1783,6 +1783,25 @@ import Ontology.Simulation Ontology.Simulation.BoolWrapper Boolean;
 				return typeInfo.Type.Name;
 
 			return typeInfo.ToString();
+		}
+
+		private static bool IsSupportedComparisonOperand(TypeInfo? typeInfo)
+		{
+			if (typeInfo?.Type == null)
+				return false;
+
+			System.Type type = Nullable.GetUnderlyingType(typeInfo.Type) ?? typeInfo.Type;
+			return type == typeof(byte)
+				|| type == typeof(sbyte)
+				|| type == typeof(short)
+				|| type == typeof(ushort)
+				|| type == typeof(int)
+				|| type == typeof(uint)
+				|| type == typeof(long)
+				|| type == typeof(ulong)
+				|| type == typeof(float)
+				|| type == typeof(double)
+				|| type == typeof(decimal);
 		}
 
 		public Compiled.Expression CompileNullCoalescingOperator(BinaryOperator op)

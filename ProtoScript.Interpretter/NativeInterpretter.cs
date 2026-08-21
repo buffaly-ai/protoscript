@@ -1076,15 +1076,14 @@ namespace ProtoScript.Interpretter
 
 		public object Evaluate(Compiled.ComparisonOperator exp)
 		{
-			// Evaluate both sides once, coerce to int
-			object? leftObj = ValueConversions.GetAs(Evaluate(exp.Left), typeof(int));
-			object? rightObj = ValueConversions.GetAs(Evaluate(exp.Right), typeof(int));
+			object? leftValue = UnwrapRuntimeValue(Evaluate(exp.Left));
+			object? rightValue = UnwrapRuntimeValue(Evaluate(exp.Right));
 
-			if (!(leftObj is int left))
-				throw new RuntimeException("Left side of comparison is not convertible to int", exp.Info);
+			if (!TryConvertToComparisonNumber(leftValue, out decimal left))
+				throw new RuntimeException("Left side of comparison is not convertible to a numeric value", exp.Info);
 
-			if (!(rightObj is int right))
-				throw new RuntimeException("Right side of comparison is not convertible to int", exp.Info);
+			if (!TryConvertToComparisonNumber(rightValue, out decimal right))
+				throw new RuntimeException("Right side of comparison is not convertible to a numeric value", exp.Info);
 
 			switch (exp.Operator)
 			{
@@ -1122,6 +1121,49 @@ namespace ProtoScript.Interpretter
 
 				default:
 					throw new RuntimeException("Unsupported comparison operator", exp.Info);
+			}
+		}
+
+		private static object? UnwrapRuntimeValue(object? value)
+		{
+			if (value is ValueRuntimeInfo valueRuntimeInfo)
+				return valueRuntimeInfo.Value;
+
+			return value;
+		}
+
+		private static bool TryConvertToComparisonNumber(object? value, out decimal number)
+		{
+			number = 0m;
+			if (value == null)
+				return false;
+
+			System.Type type = Nullable.GetUnderlyingType(value.GetType()) ?? value.GetType();
+			if (type == typeof(float) || type == typeof(double))
+			{
+				double doubleValue = Convert.ToDouble(value);
+				if (double.IsNaN(doubleValue) || double.IsInfinity(doubleValue))
+					return false;
+
+				number = Convert.ToDecimal(doubleValue);
+				return true;
+			}
+
+			switch (System.Type.GetTypeCode(type))
+			{
+				case TypeCode.Byte:
+				case TypeCode.SByte:
+				case TypeCode.Int16:
+				case TypeCode.UInt16:
+				case TypeCode.Int32:
+				case TypeCode.UInt32:
+				case TypeCode.Int64:
+				case TypeCode.UInt64:
+				case TypeCode.Decimal:
+					number = Convert.ToDecimal(value);
+					return true;
+				default:
+					return false;
 			}
 		}
 

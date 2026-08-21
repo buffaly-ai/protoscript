@@ -1,5 +1,9 @@
 # Compiler.cs Change History
 
+## Numeric Comparison Operands (2026-08-21)
+- Expanded comparison-operator compilation from integer-only operands to the supported numeric CLR primitives: byte/sbyte, short/ushort, int/uint, long/ulong, float, double, and decimal.
+- Design Decision: score-threshold expressions such as `topScore >= 0.5` are valid ProtoScript numeric comparisons and should compile instead of producing an unsupported integer-only diagnostic that later cascades into null-expression interpretation.
+
 ## Initializer RHS Diagnostics (2026-08-21)
 - Added an explicit diagnostic for capitalized boolean literal tokens `True` and `False`; ProtoScript boolean literals are lowercase `true` and `false`, so these tokens should not fall through as unresolved identifiers.
 - Design Decision: report literal-casing mistakes at identifier compilation time so initializer assignment failures surface an actionable language diagnostic instead of later producing a null compiled expression.
