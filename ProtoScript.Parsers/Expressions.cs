@@ -121,7 +121,7 @@ namespace ProtoScript.Parsers
 					strTok = tok.peekNextToken();
 				}
 
-				if (strTok == ".")
+				if (strTok == "." || strTok == "?.")
 				{
 					term = ParseDotOperators(tok, term);
 					term.Info.StartStatement(iStart);
@@ -441,79 +441,58 @@ throw;
 
 static public Expression ParseDotOperators(Parsers.Tokenizer tok, Expression termLeft)
 {
-List<Expression> terms = new List<Expression>() { termLeft };
-List<string> ops = new List<string>();
-
 int iCursor = tok.getCursor();
+Expression result = termLeft;
 
 do
 {
 string tokDot = tok.getNextToken();
 if (tokDot != "." && tokDot != "?.")
 throw new ProtoScriptParsingException(tok.getString(), tok.getCursor(), ". or ?.");
-ops.Add(tokDot);
 
 int iStart = tok.getCursor();
 Identifier identifier = Identifiers.ParseAsIdentifier(tok);
+int iAfterIdentifier = tok.getCursor();
+Expression member = identifier;
 
 if (tok.peekNextToken() == "(" || tok.peekNextToken() == "<")
 {
 tok.setCursor(iStart);
-terms.Add(MethodEvaluations.Parse(tok));
-}
+MethodEvaluation method = MethodEvaluations.Parse(tok);
+if (method != null)
+member = method;
 else
-{
-terms.Add(identifier);
+tok.setCursor(iAfterIdentifier);
 }
 
-if (tok.peekNextToken() == "[")
+BinaryOperator op = new BinaryOperator(tokDot);
+op.Info.StartStatement(iCursor);
+op.Info.File = Files.CurrentFile;
+op.Left = result;
+op.Right = member;
+result = op;
+
+while (tok.peekNextToken() == "[")
 {
 tok.MustBeNext("[");
 IndexOperator opIndex = new IndexOperator();
+opIndex.Info.StartStatement(iCursor);
+opIndex.Info.File = Files.CurrentFile;
+opIndex.Left = result;
 //Only allow one parameter (no [1, 3] )
 opIndex.Right = ProtoScript.Parsers.Expressions.Parse(tok);
 tok.MustBeNext("]");
-terms.Add(opIndex);
+opIndex.Info.StopStatement(tok.getCursor());
+result = opIndex;
 }
 
 }
 while (tok.peekNextToken() == "." || tok.peekNextToken() == "?.");
 
-                        BinaryOperator op = new BinaryOperator(ops[0]);
-			op.Info.StartStatement(iCursor);
-			op.Info.File = Files.CurrentFile;
-			op.Info.StopStatement(tok.getCursor());
-			
-                        int iOp = 1;
-                        for (int i = 0; i < terms.Count; i++)
-			{
-				Expression term = terms[i];
-
-				if (term is IndexOperator)
-				{
-					IndexOperator opIndex = term as IndexOperator;
-					opIndex.Info = op.Info;
-					opIndex.Left = op;
-					op = opIndex;
-				}
-
-				else if (op.Left == null)
-					op.Left = term;
-
-				else if (op.Right == null)
-					op.Right = term;
-
-				else
-				{
-BinaryOperator opNew = new BinaryOperator(ops[iOp++]);
-					opNew.Info = op.Info;
-					opNew.Left = op;
-					opNew.Right = term;
-					op = opNew;
-				}
-			}
-
-			return op;
+			result.Info.StartStatement(iCursor);
+			result.Info.File = Files.CurrentFile;
+			result.Info.StopStatement(tok.getCursor());
+			return result;
 		}
 
 		static public IsInitializedOperator ParseIsInitialized(Tokenizer tok)
