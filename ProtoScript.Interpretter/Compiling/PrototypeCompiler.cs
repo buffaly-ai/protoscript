@@ -1,4 +1,4 @@
-﻿//added
+//added
 using BasicUtilities;
 using Ontology;
 using ProtoScript.Diagnostics;
@@ -121,6 +121,15 @@ namespace ProtoScript.Interpretter.Compiling
 			{				
 				PrototypeTypeInfo ? typeInfo = compiler.Symbols.GetTypeInfo(typeOf) as PrototypeTypeInfo;
 				Prototype ? protoTypeOf = typeInfo?.Prototype;
+				if (protoTypeOf != null && protoTypeOf.PrototypeID < 0)
+				{
+					Prototype? currentTemporaryParent = TemporaryPrototypes.GetTemporaryPrototypeOrNull(typeOf.TypeName);
+					if (currentTemporaryParent != null)
+					{
+						protoTypeOf = currentTemporaryParent;
+						typeInfo!.Prototype = currentTemporaryParent;
+					}
+				}
 
 				if (null == protoTypeOf)
 				{
