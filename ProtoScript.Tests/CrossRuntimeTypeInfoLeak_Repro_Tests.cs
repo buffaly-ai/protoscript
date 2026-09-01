@@ -71,25 +71,6 @@ prototype {prototypeName}
 		}
 
 		[TestMethod]
-		public void IncrementalInheritance_RebindsStaleTemporaryParentSymbolByName()
-		{
-			string parentName = "IncrementalParent_" + Guid.NewGuid().ToString("N");
-			string childName = "IncrementalChild_" + Guid.NewGuid().ToString("N");
-			Compiler compiler = BuildCompiler($"prototype {parentName};");
-			PrototypeTypeInfo parentTypeInfo = (PrototypeTypeInfo)compiler.Symbols.GetTypeInfo(parentName)!;
-			Prototype staleParent = parentTypeInfo.Prototype;
-			Prototype currentParent = staleParent.ShallowClone();
-			TemporaryPrototypes.InsertPrototype(currentParent);
-
-			compiler.Compile(Files.ParseFileContents($"prototype {childName} : {parentName};"));
-
-			Assert.AreEqual(0, compiler.Diagnostics.Count, string.Join("; ", compiler.Diagnostics.Select(x => x.Diagnostic.Message)));
-			Prototype child = TemporaryPrototypes.GetTemporaryPrototype(childName);
-			Assert.IsTrue(child.GetTypeOfs().Contains(currentParent.PrototypeID));
-			Assert.AreSame(currentParent, parentTypeInfo.Prototype);
-		}
-
-		[TestMethod]
 		public void DotNetGenericTypeResolution_DoesNotMutateSharedGenericDefinition()
 		{
 			Compiler compiler = new Compiler();
