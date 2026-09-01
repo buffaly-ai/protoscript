@@ -80,6 +80,9 @@ prototype {prototypeName}
 			Prototype staleParent = parentTypeInfo.Prototype;
 			Prototype currentParent = staleParent.ShallowClone();
 			TemporaryPrototypes.InsertPrototype(currentParent);
+			TemporaryPrototypes.ListById[Math.Abs(currentParent.PrototypeID)] = null!;
+			Assert.AreSame(currentParent, TemporaryPrototypes.GetTemporaryPrototype(parentName));
+			Assert.IsNull(TemporaryPrototypes.GetTemporaryPrototypeOrNull(currentParent.PrototypeID));
 
 			compiler.Compile(Files.ParseFileContents($"prototype {childName} : {parentName};"));
 

@@ -126,6 +126,8 @@ namespace ProtoScript.Interpretter.Compiling
 					Prototype? currentTemporaryParent = TemporaryPrototypes.GetTemporaryPrototypeOrNull(typeOf.TypeName);
 					if (currentTemporaryParent != null)
 					{
+						if (!ReferenceEquals(TemporaryPrototypes.GetTemporaryPrototypeOrNull(currentTemporaryParent.PrototypeID), currentTemporaryParent))
+							TemporaryPrototypes.InsertPrototype(currentTemporaryParent);
 						protoTypeOf = currentTemporaryParent;
 						typeInfo!.Prototype = currentTemporaryParent;
 					}
