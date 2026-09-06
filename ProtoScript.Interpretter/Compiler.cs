@@ -1122,7 +1122,9 @@ import Ontology.Simulation Ontology.Simulation.BoolWrapper Boolean;
 			if (methodScope == null)
 				return null;
 
-			ValueRuntimeInfo infoThis = methodScope.GetSymbol("this") as ValueRuntimeInfo;
+			// Nested block scopes do not always parent to the method scope during compilation,
+			// so resolve the prototype receiver from Symbols.MethodScope instead of active scope lookup.
+			ValueRuntimeInfo? infoThis = methodScope.GetSymbol("this") as ValueRuntimeInfo;
 			if (infoThis?.Type?.Type != typeof(Prototype))
 				return null;
 

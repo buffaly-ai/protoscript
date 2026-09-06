@@ -34,6 +34,28 @@ prototype PrototypeNameDeclaredChild : PrototypeNameDeclaredBase
 		}
 
 		[TestMethod]
+		public void RunMethod_BarePrototypeNameInsideNestedIfBlock_ReturnsCurrentPrototypeName()
+		{
+			const string code = @"
+prototype PrototypeNameNestedIfChild
+{
+	function Execute() : string
+	{
+		if (true)
+		{
+			return PrototypeName;
+		}
+
+		return @""wrong"";
+	}
+}";
+
+			object? result = RunPrototypeMethod(code, "PrototypeNameNestedIfChild", "Execute");
+
+			Assert.AreEqual("PrototypeNameNestedIfChild", result);
+		}
+
+		[TestMethod]
 		public void RunMethod_BareAndExplicitPrototypeNameInInheritedPrototypeMethod_OnChild_ReturnSamePrototypeName()
 		{
 			const string code = @"
@@ -57,6 +79,26 @@ prototype PrototypeNameInheritedChild : PrototypeNameInheritedChildBase;";
 
 			Assert.AreEqual("PrototypeNameInheritedChild", bare);
 			Assert.AreEqual(explicitReceiver, bare);
+		}
+
+		[TestMethod]
+		public void RunMethod_InheritedLocalVariableNamedPrototypeName_ShieldsImplicitReceiverNativeMember()
+		{
+			const string code = @"
+prototype PrototypeNameInheritedLocalShadowBase
+{
+	function Execute() : string
+	{
+		string PrototypeName = @""inherited-local-shadow"";
+		return PrototypeName;
+	}
+}
+
+prototype PrototypeNameInheritedLocalShadowChild : PrototypeNameInheritedLocalShadowBase;";
+
+			object? result = RunPrototypeMethod(code, "PrototypeNameInheritedLocalShadowChild", "Execute");
+
+			Assert.AreEqual("inherited-local-shadow", result);
 		}
 
 		[TestMethod]
