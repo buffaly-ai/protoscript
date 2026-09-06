@@ -1054,6 +1054,13 @@ import Ontology.Simulation Ontology.Simulation.BoolWrapper Boolean;
 					obj = ResolveTypeInfo(parsedType, null, parsedType);
 				}
 
+				if (null == obj)
+				{
+					Compiled.Expression? implicitReceiverMember = CompileImplicitPrototypeReceiverNativeMember(strValue, info);
+					if (null != implicitReceiverMember)
+						return implicitReceiverMember;
+				}
+
 			}
 
 			if (obj is null)
@@ -1101,6 +1108,26 @@ import Ontology.Simulation Ontology.Simulation.BoolWrapper Boolean;
 				default:
 					return null;
 			}
+		}
+
+		private Compiled.Expression? CompileImplicitPrototypeReceiverNativeMember(string identifier, StatementParsingInfo info)
+		{
+			if (string.IsNullOrWhiteSpace(identifier))
+				return null;
+
+			if (identifier == "this" || identifier.Contains(".") || identifier.Contains("<"))
+				return null;
+
+			Scope? methodScope = Symbols.MethodScope;
+			if (methodScope == null)
+				return null;
+
+			ValueRuntimeInfo infoThis = methodScope.GetSymbol("this") as ValueRuntimeInfo;
+			if (infoThis?.Type?.Type != typeof(Prototype))
+				return null;
+
+			Compiled.Expression receiver = new GetLocalStack { Index = infoThis.Index, InferredType = infoThis.Type, Info = info };
+			return GetDotNetMemberReference(info, identifier, receiver);
 		}
 
 		public Compiled.ExpressionStatement Compile(ExpressionStatement statement)

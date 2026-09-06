@@ -1,5 +1,9 @@
 # Compiler.cs Change History
 
+## Implicit Prototype Receiver Native Members (2026-09-06)
+- Added bounded fallback resolution for unresolved bare identifiers inside prototype method scope so native `Ontology.Prototype` members such as `PrototypeName` resolve equivalently to explicit `this.PrototypeName`.
+- Design Decision: preserve normal lexical precedence by trying locals, parameters, declared fields, globals, generic type parsing, and qualified paths first; only unresolved method-scope bare identifiers use the current prototype receiver fallback.
+
 ## Numeric Comparison Operands (2026-08-21)
 - Expanded comparison-operator compilation from integer-only operands to the supported numeric CLR primitives: byte/sbyte, short/ushort, int/uint, long/ulong, float, double, and decimal.
 - Design Decision: score-threshold expressions such as `topScore >= 0.5` are valid ProtoScript numeric comparisons and should compile instead of producing an unsupported integer-only diagnostic that later cascades into null-expression interpretation.
