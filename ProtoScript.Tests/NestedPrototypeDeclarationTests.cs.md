@@ -1,0 +1,3 @@
+# Nested declaration regression tests
+
+20 MSTest fixtures exercise compiler-owned lexical nesting, recursive/wide trees, inheritance separation, explicit relationship APIs, lazy loading and caller scope, eager include order, canonical reset/reload, cloned relationships, independent execution contexts, scalar and generic dotted-name negative behavior. Graphs are compared before/after fixture interpretation. Reopened nested declarations preserve a separately reproduced baseline diagnostic; dotted top-level names do not imply lexical nesting. Full serialized host-session restoration is outside this compiler-only suite and must be validated before deployment.

@@ -726,6 +726,8 @@ namespace ProtoScript.Interpretter.Compiling
 							null);
 						continue;
 					}
+					// Lexical ownership is known here; generic value insertion must not infer nesting.
+					declaration.TypeInfo.Prototype.InsertNestedParent(prototype.PrototypeID);
 					info.Scope.InsertSymbol(strOriginalName, declaration.TypeInfo);
 				}
 
