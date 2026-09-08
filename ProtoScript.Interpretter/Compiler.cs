@@ -50,6 +50,9 @@ namespace ProtoScript.Interpretter
 		public List<LazyIncludeDeclaration> LazyIncludeDeclarations { get; } = new List<LazyIncludeDeclaration>();
 		private readonly Dictionary<FunctionDefinition, FunctionRuntimeInfo> _functionDeclarations = new(ReferenceEqualityComparer.Instance);
 		public bool AllowParallelism = false;
+		// Per-compiler correlation keeps concurrent workers and later lazy-module loads distinct from other compilers.
+		public CompilationTimingProfile? TimingProfile { get; set; } = Environment.GetEnvironmentVariable("BUFFALY_PROTOSCRIPT_LOAD_TIMING") == "1"
+			? new CompilationTimingProfile(json => Logs.DebugLog.WriteEvent("ProtoScript.LoadTiming", json)) : null;
 		public CompilationMode ProjectCompilationMode { get; set; } = CompilationMode.Strict;
 		private static readonly Dictionary<string, Assembly> s_assemblyPathCache =
 			new Dictionary<string, Assembly>(StringComparer.OrdinalIgnoreCase);
@@ -169,6 +172,7 @@ import Ontology.Simulation Ontology.Simulation.BoolWrapper Boolean;
 
 		public List<Compiled.Statement> CompileProject(string strProjectFile)
 		{
+			using var projectTiming = TimingProfile?.Measure("Project", "CompileProject", strProjectFile);
 			Compiler compiler = this;
 
 			File file = ProtoScript.Parsers.Files.Parse(strProjectFile);
@@ -176,6 +180,7 @@ import Ontology.Simulation Ontology.Simulation.BoolWrapper Boolean;
 			ConcurrentDictionary<string, string> includeParseFailures = new ConcurrentDictionary<string, string>(StringComparer.OrdinalIgnoreCase);
 
 			Logs.DebugLog.CreateTimer("CompileProject.ParseFiles");
+			using var parseTiming = TimingProfile?.Measure("Parse", "Includes", strProjectFile);
 
 			List<File> lstFiles = GetAllIncludedFiles(
 				file,
@@ -201,6 +206,7 @@ import Ontology.Simulation Ontology.Simulation.BoolWrapper Boolean;
 			}
 
 			Logs.DebugLog.WriteTimer("CompileProject.ParseFiles");
+			parseTiming?.Dispose();
 
 			List<Compiled.Statement> statements = CompileFileList(lstFiles);
 
@@ -259,6 +265,7 @@ import Ontology.Simulation Ontology.Simulation.BoolWrapper Boolean;
 
 		public List<Compiled.Statement> CompileAndAppendModule(string strFilePath)
 		{
+			using var moduleTiming = TimingProfile?.Measure("LazyModule", "CompileAndAppendModule", strFilePath);
 			File moduleFile = ProtoScript.Parsers.Files.Parse(strFilePath);
 			List<File> moduleFiles = new List<File> { moduleFile };
 			moduleFiles.AddRange(GetAllIncludedFiles(
@@ -366,6 +373,7 @@ import Ontology.Simulation Ontology.Simulation.BoolWrapper Boolean;
 
 				void RunStage(string stageName, Action<File> action, Func<File, bool>? filter = null)
 				{
+					using var stageTiming = TimingProfile?.Measure("Stage", stageName);
 					currentStage = stageName;
 					Logs.DebugLog.CreateTimer("CompileProject." + stageName);
 					foreach (File fileCurrent in activeFiles.ToList())
@@ -377,6 +385,7 @@ import Ontology.Simulation Ontology.Simulation.BoolWrapper Boolean;
 						int diagnosticsBefore = this.Diagnostics.Count;
 						try
 						{
+							using var fileTiming = TimingProfile?.Measure("FileStage", stageName, fileCurrent.Info?.FullName ?? string.Empty, detail: true);
 							action(fileCurrent);
 						}
 						catch (ProtoScriptCompilerException ex)

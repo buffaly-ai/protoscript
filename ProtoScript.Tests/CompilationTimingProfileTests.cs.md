@@ -1,0 +1,1 @@
+Tests cover exactly-once scope disposal, failure unwind, stable correlation, and opt-in compilation leaving a missing lazy target unparsed.

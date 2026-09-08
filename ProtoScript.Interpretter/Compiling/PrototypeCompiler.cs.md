@@ -1,3 +1,8 @@
-# Compiler-owned nesting
+# Prototype compiler history
 
-DeclareNestedPrototypes links each successfully declared lexical child to its known parent before local symbol insertion. Generic temporary registration does not infer nesting from names. No global scan or secondary index is used. Tests cover recursion, lazy modules, values, reset/reload and isolated contexts.
+## Compiler-owned nesting (2026-09-07)
+DeclareNestedPrototypes links each successfully declared lexical child to its already-resolved enclosing prototype before inserting the local symbol. Generic temporary-prototype insertion no longer guesses ownership from names. No reverse scan or secondary index is required. Dotted top-level names are not lexical nesting; supported nested AST declarations remain linked. Tests cover recursion, wide declarations, lazy append, inheritance separation, reset/reload, explicit reparenting and clone behavior.
+
+## Opt-in load timing (2026-09-07)
+- BUFFALY_PROTOSCRIPT_LOAD_TIMING=1 enables per-compiler correlated project/include-parse/stage/file/prototype/lazy-append timing. Disabled by default; no changes to module discovery or execution order.
+- Detail rows record only operations >=10ms, capped at100 per compiler. Stage totals include nested detail timings and must not be added to them. No source contents or credentials logged.

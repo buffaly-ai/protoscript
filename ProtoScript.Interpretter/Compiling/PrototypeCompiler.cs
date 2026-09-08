@@ -1,4 +1,4 @@
-﻿//added
+//added
 using BasicUtilities;
 using Ontology;
 using ProtoScript.Diagnostics;
@@ -114,8 +114,10 @@ namespace ProtoScript.Interpretter.Compiling
 		//uses Scope instead of ResolvePrototype
 		static public void DeclarePrototypeTypeOfs(PrototypeDefinition protoDef, Compiler compiler)
 		{
-			Prototype prototype = GetResolvedPrototypeOrThrow(protoDef);
+			var timingResolve = compiler.TimingProfile?.Measure("Inner", "Resolve", protoDef.PrototypeName?.TypeName ?? "");
+Prototype prototype = GetResolvedPrototypeOrThrow(protoDef);
 			PrototypeTypeInfo info = GetPrototypeTypeInfoOrThrow(prototype, protoDef, compiler);
+timingResolve?.Dispose();
 
 			foreach (ProtoScript.Type typeOf in protoDef.Inherits)
 			{				
@@ -209,8 +211,10 @@ namespace ProtoScript.Interpretter.Compiling
 		{
 			List<Compiled.Statement> lstStatements = new List<Compiled.Statement>();
 
-			Prototype prototype = GetResolvedPrototypeOrThrow(protoDef);
+			var timingResolve = compiler.TimingProfile?.Measure("Inner", "Resolve", protoDef.PrototypeName?.TypeName ?? "");
+Prototype prototype = GetResolvedPrototypeOrThrow(protoDef);
 			PrototypeTypeInfo info = GetPrototypeTypeInfoOrThrow(prototype, protoDef, compiler);
+timingResolve?.Dispose();
 
 			compiler.Symbols.EnterScope(info.Scope);
 
@@ -237,6 +241,7 @@ namespace ProtoScript.Interpretter.Compiling
 
 			foreach (PrototypeDefinition protoDef in file.PrototypeDefinitions)
 			{
+				using var prototypeTiming = compiler.TimingProfile?.Measure("Prototype", protoDef.PrototypeName?.TypeName ?? "(unknown)", file.Info?.FullName ?? string.Empty, detail: true);
 				try
 				{
 					List<Compiled.Statement>? prototypeStatements = DefinePrototype(protoDef, compiler);
@@ -270,10 +275,14 @@ namespace ProtoScript.Interpretter.Compiling
 			//Ignore the ElementTypes here. If we have 
 			//prototype Converts<T>;
 			//then ignore the T until the Declaration. 
-			Prototype prototype = GetResolvedPrototypeOrThrow(protoDef);
+			var timingResolve = compiler.TimingProfile?.Measure("Inner", "Resolve", protoDef.PrototypeName?.TypeName ?? "");
+Prototype prototype = GetResolvedPrototypeOrThrow(protoDef);
 			PrototypeTypeInfo info = GetPrototypeTypeInfoOrThrow(prototype, protoDef, compiler);
+timingResolve?.Dispose();
 
-			List<Compiled.Statement>? prototypeFunctions = DefinePrototypeFunctions(protoDef, info, compiler);
+			var timingFunctions = compiler.TimingProfile?.Measure("Inner", "Functions", protoDef.PrototypeName?.TypeName ?? "");
+List<Compiled.Statement>? prototypeFunctions = DefinePrototypeFunctions(protoDef, info, compiler);
+timingFunctions?.Dispose();
 			if (prototypeFunctions != null)
 				lstStatements.AddRange(prototypeFunctions);
 
@@ -285,10 +294,14 @@ namespace ProtoScript.Interpretter.Compiling
 			}
 
 			//N20220726-01 - Annotate the prototype before any methods within it
-			List<Compiled.Statement>? prototypeAnnotations = AnnotatePrototype(protoDef, compiler);
+			var timingAnnotations = compiler.TimingProfile?.Measure("Inner", "Annotations", protoDef.PrototypeName?.TypeName ?? "");
+List<Compiled.Statement>? prototypeAnnotations = AnnotatePrototype(protoDef, compiler);
+timingAnnotations?.Dispose();
 			if (prototypeAnnotations != null)
 				lstStatements.AddRange(prototypeAnnotations);
-			List<Compiled.Statement>? internalAnnotations = DefinePrototypeInternalAnnotations(protoDef, info, compiler);
+			var timingInternalAnnotations = compiler.TimingProfile?.Measure("Inner", "InternalAnnotations", protoDef.PrototypeName?.TypeName ?? "");
+List<Compiled.Statement>? internalAnnotations = DefinePrototypeInternalAnnotations(protoDef, info, compiler);
+timingInternalAnnotations?.Dispose();
 			if (internalAnnotations != null)
 				lstStatements.AddRange(internalAnnotations);
 
@@ -296,7 +309,8 @@ namespace ProtoScript.Interpretter.Compiling
 
 			try
 			{
-				List<Compiled.Statement> lstInitializers = new List<Compiled.Statement>();
+				using var timingInitializers = compiler.TimingProfile?.Measure("Inner", "Initializers", protoDef.PrototypeName?.TypeName ?? "");
+List<Compiled.Statement> lstInitializers = new List<Compiled.Statement>();
 				foreach (PrototypeInitializer initializer in protoDef.Initializers)
 				{
 					List<Compiled.Statement>? compiledInitializer = PrototypeInitializerCompiler.Compile(initializer, info, compiler);
@@ -533,8 +547,10 @@ namespace ProtoScript.Interpretter.Compiling
 		{
 			List<Compiled.Statement> lstStatements = new List<Compiled.Statement>();
 
-			Prototype prototype = GetResolvedPrototypeOrThrow(protoDef);
+			var timingResolve = compiler.TimingProfile?.Measure("Inner", "Resolve", protoDef.PrototypeName?.TypeName ?? "");
+Prototype prototype = GetResolvedPrototypeOrThrow(protoDef);
 			PrototypeTypeInfo info = GetPrototypeTypeInfoOrThrow(prototype, protoDef, compiler);
+timingResolve?.Dispose();
 
 			compiler.Symbols.EnterScope(info.Scope);
 			Scope scopeGlobal = compiler.Symbols.GetGlobalScope();
@@ -706,8 +722,10 @@ namespace ProtoScript.Interpretter.Compiling
 		//Nested Prototypes
 		public static void DeclareNestedPrototypes(PrototypeDefinition protoDef, Compiler compiler)
 		{
-			Prototype prototype = GetResolvedPrototypeOrThrow(protoDef);
+			var timingResolve = compiler.TimingProfile?.Measure("Inner", "Resolve", protoDef.PrototypeName?.TypeName ?? "");
+Prototype prototype = GetResolvedPrototypeOrThrow(protoDef);
 			PrototypeTypeInfo info = GetPrototypeTypeInfoOrThrow(prototype, protoDef, compiler);
+timingResolve?.Dispose();
 
 			try
 			{
@@ -747,8 +765,10 @@ namespace ProtoScript.Interpretter.Compiling
 		{
 			List<Compiled.Statement> lstStatements = new List<Compiled.Statement>();
 
-			Prototype prototype = GetResolvedPrototypeOrThrow(protoDef);
+			var timingResolve = compiler.TimingProfile?.Measure("Inner", "Resolve", protoDef.PrototypeName?.TypeName ?? "");
+Prototype prototype = GetResolvedPrototypeOrThrow(protoDef);
 			PrototypeTypeInfo info = GetPrototypeTypeInfoOrThrow(prototype, protoDef, compiler);
+timingResolve?.Dispose();
 
 			try
 			{
