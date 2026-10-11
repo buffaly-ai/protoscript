@@ -45,3 +45,13 @@
 ## Opt-in load timing (2026-09-07)
 - BUFFALY_PROTOSCRIPT_LOAD_TIMING=1 enables per-compiler correlated project/include-parse/stage/file/prototype/lazy-append timing. Disabled by default; no changes to module discovery or execution order.
 - Detail rows record only operations >=10ms, capped at100 per compiler. Stage totals include nested detail timings and must not be added to them. No source contents or credentials logged.
+
+## 2026-10-10 — Check included identity before reading/parsing
+- GetIncludedFiles now checks a per-traversal successful-file set before TryParse in wildcard and literal branches; preserve depth-first first-seen order and the existing duplicate detector. Failed best-effort includes are not recorded as successful, preserving per-site callbacks/placeholders.
+- The parallel helper atomically reserves identity before parsing, preventing concurrent diamond branches from rereading the same input; failed placeholders release the reservation. Existing parallel traversal order/root behavior is unchanged.
+- No global file cache, logger suppression or parser changes. Source and precompiled JSON includes share the same file identity; lazy callbacks and strict missing-file errors remain intact.
+- Validation: 29/29 focused include/CLI/lazy tests passed, including deleted-target proof that duplicate inputs are never reread, diamond wildcard order, cycles, best-effort errors, precompiled preference and cross-operation edits. Staging validation pending. ProtoScript commit requires explicit post-review approval per AGENTS.md.
+
+## 2026-10-11 — Approved commit and delivery preparation
+- Matt explicitly approved committing the reviewed four-file include fix and finishing staging validation. The scoped implementation remains unchanged; unrelated quiet-parser modifications are excluded.
+- Fresh include/CommandLine/lazy filtered run passed 22/22 with zero failures/skips. This narrower current filter is not the earlier 29-case receipt. Installed pre-delivery harness still fails four duplicate-read proofs (10/14 pass), confirming the deployment gap. Canonical registered build and installed verification follow the commit; no Matt-local update or restart is authorized.

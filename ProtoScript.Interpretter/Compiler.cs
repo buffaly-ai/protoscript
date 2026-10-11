@@ -522,7 +522,7 @@ import Ontology.Simulation Ontology.Simulation.BoolWrapper Boolean;
 			}
 			else
 			{
-				GetIncludedFiles(file, lstFiles, bIgnoreErrors, includeParseFailureHandler, lazyIncludeHandler);
+				GetIncludedFiles(file, lstFiles, new HashSet<string>(StringComparer.OrdinalIgnoreCase), bIgnoreErrors, includeParseFailureHandler, lazyIncludeHandler);
 			}
 
 			return lstFiles;
@@ -577,21 +577,23 @@ import Ontology.Simulation Ontology.Simulation.BoolWrapper Boolean;
 
 						foreach (string path in paths)
 						{
+							// Reserve identity before parsing so concurrent branches cannot read the same include twice.
+							string fullPath = Path.GetFullPath(path);
+							if (!seen.TryAdd(fullPath, 0))
+							{
+								Logs.DebugLog.WriteEvent("**** WARNING **** File already included", fullPath);
+								continue;
+							}
 							File? sub = TryParse(path, bIgnoreErrors, inc, fileCurrent, includeParseFailureHandler);
 							if (sub != null)
 							{
-								if (seen.TryAdd(sub.Info.FullName, 0))
-								{
-									bag.Add(sub);
-									queue.Enqueue(sub);
-								}
-								else
-								{
-									Logs.DebugLog.WriteEvent("**** WARNING **** File already included", sub.Info.FullName);
-								}
+								bag.Add(sub);
+								queue.Enqueue(sub);
 							}
 							else if (bIgnoreErrors)
 							{
+								// Failed includes remain retryable and retain their existing per-site diagnostics/placeholders.
+								seen.TryRemove(fullPath, out _);
 								FileInfo infoPlaceholder = new FileInfo(path);
 								File placeholder = new File();
 								placeholder.Info = infoPlaceholder;
@@ -610,6 +612,7 @@ import Ontology.Simulation Ontology.Simulation.BoolWrapper Boolean;
 		static private void GetIncludedFiles(
 			File file,
 			List<File> lstFiles,
+			HashSet<string> parsedFiles,
 			bool bIgnoreErrors,
 			Action<string, Exception>? includeParseFailureHandler,
 			Action<File, IncludeStatement, string>? lazyIncludeHandler)
@@ -628,19 +631,19 @@ import Ontology.Simulation Ontology.Simulation.BoolWrapper Boolean;
 				{
 					foreach (string strFile in Directory.GetFiles(strRootDir, include.FileName, include.Recursive ? SearchOption.AllDirectories : SearchOption.TopDirectoryOnly))
 					{
+						// Preserve duplicate diagnostics, but do not read or parse an already included file.
+						string fullPath = Path.GetFullPath(strFile);
+						if (parsedFiles.Contains(fullPath))
+						{
+							Logs.DebugLog.WriteEvent("**** WARNING **** File already included", fullPath);
+							continue;
+						}
 						File? fileSub = TryParse(strFile, bIgnoreErrors, include, file, includeParseFailureHandler);
 						if (fileSub != null)
 						{
-							if (!lstFiles.Any(x => StringUtil.EqualNoCase(x.Info.FullName, fileSub.Info.FullName)))
-							{
-								lstFiles.Add(fileSub);
-								GetIncludedFiles(fileSub, lstFiles, bIgnoreErrors, includeParseFailureHandler, lazyIncludeHandler);
-							}
-							else
-							{
-								//This is just to see if we are wasting time parsing, if so rewrite to check first
-								Logs.DebugLog.WriteEvent("**** WARNING **** File already included", fileSub.Info.FullName);
-							}
+							parsedFiles.Add(fileSub.Info.FullName);
+							lstFiles.Add(fileSub);
+							GetIncludedFiles(fileSub, lstFiles, parsedFiles, bIgnoreErrors, includeParseFailureHandler, lazyIncludeHandler);
 						}
 						else if (bIgnoreErrors)
 						{
@@ -654,18 +657,17 @@ import Ontology.Simulation Ontology.Simulation.BoolWrapper Boolean;
 				else
 				{
 					string path = BuildIncludePath(strRootDir, include.FileName);
+					if (parsedFiles.Contains(path))
+					{
+						Logs.DebugLog.WriteEvent("**** WARNING **** File already included", path);
+						continue;
+					}
 					File? fileSub = TryParse(path, bIgnoreErrors, include, file, includeParseFailureHandler);
 					if (fileSub != null)
 					{
-						if (!lstFiles.Any(x => StringUtil.EqualNoCase(x.Info.FullName, fileSub.Info.FullName)))
-						{
-							lstFiles.Add(fileSub);
-							GetIncludedFiles(fileSub, lstFiles, bIgnoreErrors, includeParseFailureHandler, lazyIncludeHandler);
-						}
-						else
-						{
-							Logs.DebugLog.WriteEvent("**** WARNING **** File already included", fileSub.Info.FullName);
-						}
+						parsedFiles.Add(fileSub.Info.FullName);
+						lstFiles.Add(fileSub);
+						GetIncludedFiles(fileSub, lstFiles, parsedFiles, bIgnoreErrors, includeParseFailureHandler, lazyIncludeHandler);
 					}
 					else if (bIgnoreErrors)
 					{
