@@ -1,4 +1,4 @@
-﻿using BasicUtilities;
+using BasicUtilities;
 
 namespace ProtoScript.Parsers
 {
@@ -64,9 +64,16 @@ namespace ProtoScript.Parsers
 			}
 		}
 
+		// Preserve the existing CLR signature for already-built parser consumers.
 		static public ProtoScript.File ParseFileContents(string strContents)
 		{
-			Tokenizer tok = new Tokenizer(strContents);
+			return ParseFileContents(strContents, logParsingErrors: true);
+		}
+
+		// Memory validation can reject input without writing application errors.
+		static public ProtoScript.File ParseFileContents(string strContents, bool logParsingErrors)
+		{
+			Tokenizer tok = new Tokenizer(strContents) { LogParsingErrors = logParsingErrors };
 			File file = Parse(tok);
 			file.RawCode = strContents;
 			return file;

@@ -166,6 +166,9 @@ namespace ProtoScript.Parsers
        // This is the C#-specific Tokenizer that inherits from BasicUtilities.Tokenizer
        public class Tokenizer : BasicUtilities.Tokenizer
 	{
+		// Per-input logging policy; validation callers reject syntax without application-error noise.
+		public bool LogParsingErrors { get; set; } = true;
+
 		private readonly HashSet<string> m_setOperators;
 		private readonly HashSet<string> m_setUnary;
 		private readonly HashSet<string> m_setBinary;

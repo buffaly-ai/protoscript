@@ -1,4 +1,4 @@
-﻿namespace ProtoScript.Parsers
+namespace ProtoScript.Parsers
 {
 	public class Statements
 	{
@@ -103,6 +103,9 @@
 			}
 			catch (Exception err)
 			{
+				// Quiet validation remains fail-fast even when best-effort parsing is enabled.
+				if (!tok.LogParsingErrors)
+					throw;
 				if (Settings.FailOnParsingErrors)
 					throw Logs.LogError(err);
 				else
